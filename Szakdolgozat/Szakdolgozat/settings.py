@@ -31,8 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    # 'Szakdolgozat_app.apps.SzakdolgozatAppConfig',
-    'Szakdolgozat',
+    'Szakdolgozat_app',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

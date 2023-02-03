@@ -2,56 +2,88 @@
 {% load static %}
 
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
     <title>Sakkprogram 1.0</title>
-  </head>
-  <body>
+</head>
+<body>
 
-  <div class="container-fluid">
-  <div class="row text-center bg-secondary text-white">
+<div class="container-fluid">
+    <div class="row text-center bg-secondary text-white">
         <h1>Sakkprogram 1.0</h1>
-  </div>
+    </div>
 
     <div class="row">
         <div class="p-3 col-md-8"> <!-- 8 a sakktáblának, p-3 a padding mérete -->
-          <h2 class="text-center">Sakktábla helye</h2>
-          <div class="row text-center">
-            <div class="col"></div>
-            <canvas class="bg-light" style="max-height: 75vh; max-width: 100%;" height="800" width="800" id="chesstable"></canvas>
-          </div>
+            <h2 class="text-center">Sakktábla helye</h2>
+            <div class="row text-center">
+                <div class="col"></div>
+                <canvas class="bg-light" style="max-height: 75vh; max-width: 100%;" height="800" width="800"
+                        id="chesstable"></canvas>
+            </div>
 
         </div>
-      <div class="p-3 col-md-4"> <!-- md-4, mert a 12 fennamradóból 4 maradt -->
-        <h2 class="text-center">Lépések</h2>
-        <form method="POST" action="#" id="move_form"> <!-- action="#": visszairányítás ugyanerre az oldalra--->
-          {% csrf_token %} <!-- Ez a parancs minden formos után kell, hogy hibamentesen lefusson-->
-          <div class="row mx-auto my-2"> <!-- m: margin, x=vízszintes távolság, y=függőleges távolság-->
-          <div class="col">
-            <a class="my-1-btn btn-danger w-100" id="reset">Reset</a>
+        <div class="p-3 col-md-4"> <!-- md-4, mert a 12 fennamradóból 4 maradt -->
+            <h2 class="text-center">{% if all_positions.first.white_or_black == "White" %}Sötét lép{% else %}Világos lép{% endif %}</h2>
+            <form method="POST" action="#" id="move_form"> <!-- action="#": visszairányítás ugyanerre az oldalra--->
+                {% csrf_token %} <!-- Ez a parancs minden formos után kell, hogy hibamentesen lefusson-->
+                <div class="row mx-auto my-2"> <!-- m: margin, x=vízszintes távolság, y=függőleges távolság-->
+                    <div class="col">
+                        <a class="my-1 btn btn-danger w-100" id="reset">Visszaállít</a>
 
-          </div>
-            <div class="col">
-            <a class="my-1-btn btn-warning w-100" href="{% url 'index' %}">Vissza</a> <!--index az urls.py-ból jött, oda irányít vissza-->
+                    </div>
+                    <div class="col">
+                        <a class="my-1 btn btn-warning w-100" href="{% url 'index' %}">Vissza</a>
+                        <!--index az urls.py-ból jött, oda irányít vissza-->
 
-          </div>
-            <div class="col">
+                    </div>
+                    <div class="col">
+                        <button class="my-1 btn btn-success w-100" type="submit">Elküld</button>
+                    </div>
+
+                </div>
+                <div class="row mx-auto my-2">
+                    <input class="form-control" type="text" placeholder="Név" name="name">
+                    <!--name a form elküldésekor azonosítja az elemet-->
+
+                </div>
+                <input type="hidden" id="positions" name="positions">
+            </form>
+
+            <div class="text-center">
+                <p class="text-danger">Hibák helye</p>
+            </div>
+            <h2 class="mt-4">Előző lépések:</h2>
+            <ul class="list-group">
+                {% for move in all_positions %}
+                <li class="my-1 list-group bg-light">
+                    <div>
+                        {% if move != all_positions.first %}
+                        <a class="p-2 my-1 btn btn-sm btn-secondary" href="#">Állás betöltése</a>
+                        {% else %}<a class="p-2 my-1 btn btn-sm btn-secondary disabled">Mostani állás</a>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ move.step_count }}.move - {{move.white_or_black}} - {{ move.player_name }}
+                    </div>
+                    <div>{{ move.date_of_step}}</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
 
 
-          </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
 
-          </div>
-        </form>
-      </div>
-  </div>
-  </div>
+<script src="{% static 'js/sakk.js' %}"></script> <!-- nem találja a sakk.js-t, pedig jó az útvonal-->
 
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-
-    <script src="{% static 'js/sakk.js' %}"></script> <!-- nem találja a sakk.js-t, pedig jó az útvonal-->
-  </body>
+</body>
 </html>

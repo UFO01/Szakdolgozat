@@ -47,15 +47,16 @@
 
                 </div>
                 <div class="row mx-auto my-2">
-                    <input class="form-control" type="text" placeholder="Név" name="name">
+                    <input class="form-control" type="text" placeholder="Név" name="name" required>
                     <!--name a form elküldésekor azonosítja az elemet-->
 
                 </div>
-                <input type="hidden" id="positions" name="positions">
+                <input type="text" id="positions" name="positions">
             </form>
 
             <div class="text-center">
-                <p class="text-danger">Hibák helye</p>
+                {% if error %}
+                <p class="text-danger">{{error}}</p>{% endif %}
             </div>
             <h2 class="mt-4">Előző lépések:</h2>
             <ul class="list-group">
@@ -84,6 +85,8 @@
         crossorigin="anonymous"></script>
 
 <script src="{% static 'js/sakk.js' %}"></script> <!-- nem találja a sakk.js-t, pedig jó az útvonal-->
+
+<script>document.getElementById('positions').value='rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR';</script>
 
 </body>
 </html>

@@ -8,13 +8,14 @@ def index(request):
 
     context={}
 
-    if request.method=='POST':
+    if request.method == 'POST':
+      if len(Position.objects.all()) >= 1:
         if request.POST.get('positions') != Position.objects.last().positions_of_figures:
             p = Position()
             p.positions_of_figures = request.POST.get('positions')
             if p.positions_of_figures == 'rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR':
-                p.step_count=0
-                p.white_or_black= "New"
+                p.step_count = 0
+                p.white_or_black = "New"
             else:
                 p.step_count = Position.objects.last().step_count + 1
                 if Position.objects.last().white_or_black in ("Black", "New"):
@@ -22,15 +23,13 @@ def index(request):
                 else:
                     p.white_or_black = "Black"
 
-
-
-
-
-
             p.player_name= request.POST.get('name')
             p.save()
         else:
-            context['error'] = 'Te vagy lépésen!'
+            context['error'] = 'Érvényeset lépj!'
+      else:
+          Position.positions_of_figures= 'rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR'
+
 
 
 

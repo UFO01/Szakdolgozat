@@ -19,6 +19,7 @@ const black_figures = ['r', 'n', 'b', 'q', 'k', 'p'];
 const white_figures = ['R', 'N', 'B', 'Q', 'K', 'P'];
 
 let canvas = document.getElementById("chesstable");
+canvas.onclick = function semmit_nem_tesz (c) {}
 canvas.width = CS;
 canvas.height = CS;
 let ctx = canvas.getContext("2d");
@@ -70,8 +71,9 @@ function draw_table() {
 function canvas_click(event) {
 
     let rect = canvas.getBoundingClientRect();
-    x = parseInt((event.clientX - rect.left) / (rect.right - rect.left)) * CS;
-    y = parseInt((event.clientY - rect.top) / (rect.bottom - rect.top)) * CS;
+    x = Math.floor(((event.clientX - rect.left) / (rect.right - rect.left)) * CS);
+    y = Math.floor(((event.clientY - rect.top) / (rect.bottom - rect.top)) * CS);
+
     let row = parseInt(y / (CS / 8));
     let col = parseInt(x / (CS / 8));
 

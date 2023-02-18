@@ -47,7 +47,7 @@ function main(positions_of_figures, white_or_black, id) {
 
 function draw_table() {
     ctx.fillStyle = "#EEEEEE";
-    ctx.fillRect(0, 0, CS, CS);
+    ctx.fillRect(0, 0, 100, 100);
     ctx.fillStyle = "#CCCCCC";
 
     for (let i = 0; i < 8; i += 2) {
@@ -66,7 +66,6 @@ function draw_table() {
         }
     }
 }
-
 
 function canvas_click(event) {
 

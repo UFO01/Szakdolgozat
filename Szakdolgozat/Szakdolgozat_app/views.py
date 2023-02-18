@@ -6,7 +6,7 @@ from .models import Position
 
 def index(request):
 
-    context={}
+    context = {}
 
     if request.method == 'POST':
       if len(Position.objects.all()) >= 1:

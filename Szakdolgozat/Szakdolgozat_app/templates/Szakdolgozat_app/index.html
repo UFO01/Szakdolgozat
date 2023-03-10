@@ -18,7 +18,7 @@
     </div>
 
     <div class="row">
-        <div class="p-3 col-md-6"> <!-- 8 a sakktáblának, p-3 a padding mérete -->
+        <div class="p-3 col-md-6"> <!-- md: 12 részt lehet felosztani; p-3 a padding mérete -->
             <div class="row text-center">
                 <div class="col"></div>
                 <canvas class="bg-light" style="max-width: 90vh;max-height: 90vh;"
@@ -26,7 +26,7 @@
             </div>
 
         </div>
-        <div class="p-3 col-md-3"> <!-- md-4, mert a 12 fennamradóból 4 maradt -->
+        <div class="p-3 col-md-3">
             <h2 class="text-center">{% if all_positions.first.white_or_black == "White" %}Sötét lép{% else %}Világos lép{% endif %}</h2>
             <form method="POST" action="#" id="move_form"> <!-- action="#": visszairányítás ugyanerre az oldalra--->
                 {% csrf_token %} <!-- Ez a parancs minden formos után kell, hogy hibamentesen lefusson-->

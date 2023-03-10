@@ -1,4 +1,4 @@
-const CS = 850; //vászon (tábla) mérete
+const CS = 800; //vászon (tábla) mérete
 const FL = {
     'r': '\u265C',
     'n': '\u265E',
@@ -19,7 +19,8 @@ const black_figures = ['r', 'n', 'b', 'q', 'k', 'p'];
 const white_figures = ['R', 'N', 'B', 'Q', 'K', 'P'];
 
 let canvas = document.getElementById("chesstable");
-canvas.onclick = function semmit_nem_tesz (c) {}
+canvas.onclick = function semmit_nem_tesz(c) {
+}
 canvas.width = CS;
 canvas.height = CS;
 let ctx = canvas.getContext("2d");
@@ -76,34 +77,70 @@ function canvas_click(event) {
 
     let row = parseInt(y / (CS / 8));
     let col = parseInt(x / (CS / 8));
-
     if (move_flag === false) {
+        console.log("False a move_flag");
         if (positions_of_figures_list[row][col] !== 'x') {
-            if (wob === "White" && black_figures.includes(positions_of_figures_list[row][col]) || (wob === "Black" || wob === "New") && white_figures.includes(positions_of_figures_list[row][col])) {
+            console.log("Nem üres mező");
+            if ((wob === "White" && black_figures.includes(positions_of_figures_list[row][col])) || ((wob === "Black" || wob === "New") && white_figures.includes(positions_of_figures_list[row][col]))) {
+                console.log("Kijelölés");
                 ctx.beginPath();
-                ctx.lineWidth = "5"
+                ctx.lineWidth = "5";
                 ctx.strokeStyle = "darkred";
-                ctx.rect(col * CS / 8, row * CS / 8, CS / 8);
+                ctx.rect(col * CS / 8, row * CS / 8, CS / 8, CS / 8);
                 ctx.stroke();
                 move_flag = true;
                 figure_row = row;
                 figure_col = col;
             }
-        } else {
+        }
+        else {
             let res = prompt('Rescued figure (r, n, b, q, k, p, R, N, B, Q, K, P, x):');
-            positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
-            draw_table();
+                positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
+                draw_table();
         }
     } else {
-        if (row === figure_row && col === figure_col) {
+        if(row === figure_row && col === figure_col){
+            console.log("Kijelölés vissza");
             draw_table();
-            move_flag = false;
-        } else {
+            move_flag=false;
+        }
+        else{
+            console.log("Átmozgatás");
             positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
             positions_of_figures_list[figure_row][figure_col] = 'x';
             draw_table();
-            move_flag = false;
+            move_flag=false;
         }
     }
-document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
+    /*
+        if (move_flag === false) {
+            if (positions_of_figures_list[row][col] !== 'x') {
+                if (wob === "White" && black_figures.includes(positions_of_figures_list[row][col]) || (wob === "Black" || wob === "New") && white_figures.includes(positions_of_figures_list[row][col])) {
+                    ctx.beginPath();
+                    ctx.lineWidth = "5"
+                    ctx.strokeStyle = "darkred";
+                    console.log("majom");
+                    ctx.rect(col * CS / 8, row * CS / 8, CS / 8, CS / 8);
+                    ctx.stroke();
+                    move_flag = true;
+                    figure_row = row;
+                    figure_col = col;
+                }
+            } else {
+                let res = prompt('Rescued figure (r, n, b, q, k, p, R, N, B, Q, K, P, x):');
+                positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
+                draw_table();
+            }
+        } else {
+            if (row === figure_row && col === figure_col) {
+                draw_table();
+                move_flag = false;
+            } else {
+                positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
+                positions_of_figures_list[figure_row][figure_col] = 'x';
+                draw_table();
+                move_flag = false;
+            }
+        }
+        document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');*/
 }

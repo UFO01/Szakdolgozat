@@ -48,21 +48,29 @@ function main(positions_of_figures, white_or_black, id) {
 }
 
 function draw_table() {
-    ctx.fillStyle = "#EEEEEE";
     ctx.fillRect(0, 0, 100, 100);
-    ctx.fillStyle = "#CCCCCC";
+    ctx.fillStyle = "#BBB";
 
-    for (let i = 0; i < 8; i += 2) {
+    for (let i = 0; i < 8; i += 2) { // szurke negyzetek szinezese
         for (let j = 1; j < 8; j += 2) {
             ctx.fillRect(j * CS / 8, i * CS / 8, CS / 8, CS / 8);
             ctx.fillRect((j - 1) * CS / 8, (i + 1) * CS / 8, CS / 8, CS / 8);
         }
     }
-    ctx.fillStyle = "#000000";
+
+    ctx.fillStyle = "#ffffff";
+    for (let i = 0; i < 8; i += 2) { //  feher negyzetek szinezese
+        for (let j = 0; j < 9; j += 2) {
+            ctx.fillRect(j * CS / 8, i * CS / 8, CS / 8, CS / 8);
+            ctx.fillRect((j - 1) * CS / 8, (i + 1) * CS / 8, CS / 8, CS / 8);
+        }
+    }
+
+    ctx.fillStyle = "#000"; // babuk szinei
     ctx.font = "100px Arial";
     ctx.textAlign = "center";
 
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 8; i++) { // babuk pozicionalasa
         for (let j = 0; j < 8; j++) {
             ctx.fillText(FL[positions_of_figures_list[i][j]], j * CS / 8 + CS / 16, i * CS / 8 + CS / 16 + CS / 23);
         }
@@ -75,16 +83,17 @@ function canvas_click(event) {
     x = Math.floor(((event.clientX - rect.left) / (rect.right - rect.left)) * CS);
     y = Math.floor(((event.clientY - rect.top) / (rect.bottom - rect.top)) * CS);
 
-    let row = parseInt(y / (CS / 8));
+    let row = parseInt(y / (CS / 8)); // hanyas sor / oszlop bal felulrol kszamova 0,0 rol
     let col = parseInt(x / (CS / 8));
     if (move_flag === false) {
-        console.log("False a move_flag");
+        console.log("False a move_flag --> még nincs kijelolve babu");// nincs jelolve a babu
         if (positions_of_figures_list[row][col] !== 'x') {
             console.log("Nem üres mező");
-            if ((wob === "White" && black_figures.includes(positions_of_figures_list[row][col])) || ((wob === "Black" || wob === "New") && white_figures.includes(positions_of_figures_list[row][col]))) {
+            if ((wob === "White" && black_figures.includes(positions_of_figures_list[row][col])) ||
+                ((wob === "Black" || wob === "New") && white_figures.includes(positions_of_figures_list[row][col]))) {
                 console.log("Kijelölés");
                 ctx.beginPath();
-                ctx.lineWidth = "5";
+                ctx.lineWidth = "10";
                 ctx.strokeStyle = "darkred";
                 ctx.rect(col * CS / 8, row * CS / 8, CS / 8, CS / 8);
                 ctx.stroke();
@@ -98,7 +107,7 @@ function canvas_click(event) {
                 positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
                 draw_table();
         }
-    } else {
+    } else { // ki van jelolve a babu
         if(row === figure_row && col === figure_col){
             console.log("Kijelölés vissza");
             draw_table();

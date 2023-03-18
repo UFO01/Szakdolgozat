@@ -59,11 +59,11 @@
             </div>
             <h2 class="mt-4">Előző lépések:</h2>
             <ul class="list-group">
-                {% for move in all_positions %}
+                {% for move in all_positions|slice:":10" %}
                 <li class="my-1 list-group bg-light">
                     <div>
                         {% if move != all_positions.first %}
-                        <a class="p-2 my-1 btn btn-sm btn-secondary" href="#">Állás betöltése</a>
+                        <a class="p-2 my-1 btn btn-sm btn-secondary" href="{% url 'load' pk=move.id %}">Állás betöltése</a>
                         {% else %}<a class="p-2 my-1 btn btn-sm btn-secondary disabled">Mostani állás</a>
                         {% endif %}
                     </div>
@@ -88,6 +88,12 @@
 
 
 <script src="{% static 'js/sakk.js' %}"></script>
+
+<script
+  src="https://code.jquery.com/jquery-3.6.4.js"
+  integrity="sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E="
+  crossorigin="anonymous"></script>
+
 <script>
     //document.getElementById('positions').value='rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR';
     main('{{all_positions.first.positions_of_figures}}', '{{all_positions.first.white_or_black}}', '{{all_positions.first.id}}');

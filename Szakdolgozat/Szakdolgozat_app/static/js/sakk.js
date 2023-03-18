@@ -45,6 +45,23 @@ function main(positions_of_figures, white_or_black, id) {
     pk = id;
     wob = white_or_black;
     draw_table();
+    setInterval("api()", 3000);
+}
+
+function api(){
+    console.log("Hello")
+$.ajax({
+    url: 'api',
+    data: {
+        'pk': pk
+    },
+    dataType: 'json',
+    success: function(data){
+        if(data.reload){
+            window.location.href='';
+        }
+    }
+})
 }
 
 function draw_table() {
@@ -121,35 +138,5 @@ function canvas_click(event) {
             move_flag=false;
         }
     }
-    /*
-        if (move_flag === false) {
-            if (positions_of_figures_list[row][col] !== 'x') {
-                if (wob === "White" && black_figures.includes(positions_of_figures_list[row][col]) || (wob === "Black" || wob === "New") && white_figures.includes(positions_of_figures_list[row][col])) {
-                    ctx.beginPath();
-                    ctx.lineWidth = "5"
-                    ctx.strokeStyle = "darkred";
-                    console.log("majom");
-                    ctx.rect(col * CS / 8, row * CS / 8, CS / 8, CS / 8);
-                    ctx.stroke();
-                    move_flag = true;
-                    figure_row = row;
-                    figure_col = col;
-                }
-            } else {
-                let res = prompt('Rescued figure (r, n, b, q, k, p, R, N, B, Q, K, P, x):');
-                positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
-                draw_table();
-            }
-        } else {
-            if (row === figure_row && col === figure_col) {
-                draw_table();
-                move_flag = false;
-            } else {
-                positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
-                positions_of_figures_list[figure_row][figure_col] = 'x';
-                draw_table();
-                move_flag = false;
-            }
-        }
-        document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');*/
+    document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
 }

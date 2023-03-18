@@ -1,5 +1,5 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse, JsonResponse
 from .models import Position
 
 # Create your views here.
@@ -36,3 +36,16 @@ def index(request):
     all_positions= Position.objects.all().order_by('date_of_step').reverse()# a lépések kiíratása sorrendben, legfrissebb legfelül
     context['all_positions'] = all_positions # dictionary
     return render(request, 'Szakdolgozat_app/index.html', context) # és átadjuk
+
+def load(request, pk):
+    p = get_object_or_404(Position, pk=pk) #régi elem
+    p.pk = None #új elem, automatikusan kap új kulcsot
+    p.save() #elmentjük az új verziót
+    return redirect('index')
+
+
+def api(request):
+    print(request.GET)
+    data = {"reload": str(Position.objects.last().pk) != request.GET.get('pk')}
+    return JsonResponse(data)
+

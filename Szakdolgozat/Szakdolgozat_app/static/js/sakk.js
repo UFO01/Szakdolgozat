@@ -17,6 +17,10 @@ const FL = {
 
 const black_figures = ['r', 'n', 'b', 'q', 'k', 'p'];
 const white_figures = ['R', 'N', 'B', 'Q', 'K', 'P'];
+const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+const coordinates_2D = [
+    ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], ['1', '2', '3', '4', '5', '6', '7', '8']
+];
 
 let canvas = document.getElementById("chesstable");
 canvas.onclick = function semmit_nem_tesz(c) {
@@ -32,10 +36,6 @@ let move_flag = false
 
 canvas.onclick = canvas_click;
 
-document.getElementById("reset").onclick = function () {
-    main('rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR', 'New', pk)
-}
-
 function main(positions_of_figures, white_or_black, id) {
     document.getElementById('positions').value = positions_of_figures; //value
     positions_of_figures_list = [];
@@ -48,20 +48,25 @@ function main(positions_of_figures, white_or_black, id) {
     setInterval("api()", 3000);
 }
 
-function api(){
+document.getElementById("reset").onclick = function () {
+    main('rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR', 'New', pk)
+}
+
+
+function api() {
     console.log("Hello")
-$.ajax({
-    url: 'api',
-    data: {
-        'pk': pk
-    },
-    dataType: 'json',
-    success: function(data){
-        if(data.reload){
-            window.location.href='';
+    $.ajax({
+        url: 'api',
+        data: {
+            'pk': pk
+        },
+        dataType: 'json',
+        success: function (data) {
+            if (data.reload) {
+                window.location.href = '';
+            }
         }
-    }
-})
+    })
 }
 
 function draw_table() {
@@ -94,6 +99,7 @@ function draw_table() {
     }
 }
 
+
 function canvas_click(event) {
 
     let rect = canvas.getBoundingClientRect();
@@ -102,6 +108,9 @@ function canvas_click(event) {
 
     let row = parseInt(y / (CS / 8)); // hanyas sor / oszlop bal felulrol kszamova 0,0 rol
     let col = parseInt(x / (CS / 8));
+    console.log(row, col);
+    console.log(coordinates_2D[0][col]+coordinates_2D[1][7-row]);
+
     if (move_flag === false) {
         console.log("False a move_flag --> még nincs kijelolve babu");// nincs jelolve a babu
         if (positions_of_figures_list[row][col] !== 'x') {
@@ -118,25 +127,24 @@ function canvas_click(event) {
                 figure_row = row;
                 figure_col = col;
             }
-        }
-        else {
+        } else {
             let res = prompt('Rescued figure (r, n, b, q, k, p, R, N, B, Q, K, P, x):');
-                positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
-                draw_table();
+            positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
+            draw_table();
         }
     } else { // ki van jelolve a babu
-        if(row === figure_row && col === figure_col){
+        if (row === figure_row && col === figure_col) {
             console.log("Kijelölés vissza");
             draw_table();
-            move_flag=false;
-        }
-        else{
+            move_flag = false;
+        } else {
             console.log("Átmozgatás");
             positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
             positions_of_figures_list[figure_row][figure_col] = 'x';
             draw_table();
-            move_flag=false;
+            move_flag = false;
         }
     }
     document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
+
 }

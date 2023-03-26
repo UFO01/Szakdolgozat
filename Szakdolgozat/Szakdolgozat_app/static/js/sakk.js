@@ -42,10 +42,8 @@ function main(positions_of_figures, white_or_black, id) {
     for (let i = 0; i < 8; i++) {
         positions_of_figures_list.push(positions_of_figures.slice(i * 8, (i + 1) * 8).split(''));
     }
-    console.log(positions_of_figures_list);
-   // get_black_king_position(positions_of_figures_list);
-   // get_white_king_position(positions_of_figures_list);
-    piece_detector(positions_of_figures_list);
+    piece_detector(positions_of_figures_list); // melyik bábu hol van
+    coordinates('e8', positions_of_figures_list);
     pk = id;
     wob = white_or_black;
     draw_table();
@@ -221,6 +219,55 @@ function piece_detector(list){
         }
     }
 }
+
+function coordinates(coordinate, list){ //pl. a4
+    list= positions_of_figures_list
+    coordinate.split('');
+    for(let i=0; i<8; i++){
+        for(let j=0; j<8; j++){
+            if(coordinate[0]===coordinates_2D[0][j] && coordinate[1] === coordinates_2D[1][7-i]){
+                if(positions_of_figures_list[i][j]==='k'){
+                console.log(coordinate+": Sötét király");
+            }
+            else if(positions_of_figures_list[i][j]==='K'){
+                console.log(coordinate+": Világos király");
+            }
+            else if(positions_of_figures_list[i][j]==='q'){
+                console.log(coordinate+": Sötét vezér");
+            }
+            else if(positions_of_figures_list[i][j]==='Q'){
+                console.log(coordinate+": Világos vezér");
+            }
+            else if(positions_of_figures_list[i][j]==='b'){
+                console.log(coordinate+": Sötét futó");
+            }
+            else if(positions_of_figures_list[i][j]==='B'){
+                console.log(coordinate+": Világos futó");
+            }
+            else if(positions_of_figures_list[i][j]==='n'){
+                console.log(coordinate+": Sötét huszár");
+            }
+            else if(positions_of_figures_list[i][j]==='N'){
+                console.log(coordinate+": Világos huszár");
+            }
+            else if(positions_of_figures_list[i][j]==='r'){
+                console.log(coordinate+": Sötét bástya");
+            }
+            else if(positions_of_figures_list[i][j]==='R'){
+                console.log(coordinate+": Világos bástya");
+            }
+            else if(positions_of_figures_list[i][j]==='p'){
+                console.log(coordinate+": Sötét gyalog");
+            }
+            else if(positions_of_figures_list[i][j]==='P'){
+                console.log(coordinate+": Világos gyalog");
+            }
+            else console.log(coordinate+": Semmi");
+            }
+        }
+    }
+}
+
 
 function check(row, col) {
     let coordinates = coordinates_2D[0][col] + coordinates_2D[1][7 - row];

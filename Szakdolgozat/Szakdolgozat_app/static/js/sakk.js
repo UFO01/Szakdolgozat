@@ -32,7 +32,7 @@ let positions_of_figures_list = [];
 let wob;
 let pk;
 let figure_row, figure_col;
-let move_flag = false
+let move_flag = false;
 
 canvas.onclick = canvas_click;
 
@@ -42,6 +42,10 @@ function main(positions_of_figures, white_or_black, id) {
     for (let i = 0; i < 8; i++) {
         positions_of_figures_list.push(positions_of_figures.slice(i * 8, (i + 1) * 8).split(''));
     }
+    console.log(positions_of_figures_list);
+   // get_black_king_position(positions_of_figures_list);
+   // get_white_king_position(positions_of_figures_list);
+    piece_detector(positions_of_figures_list);
     pk = id;
     wob = white_or_black;
     draw_table();
@@ -109,7 +113,7 @@ function canvas_click(event) {
     let row = parseInt(y / (CS / 8)); // hanyas sor / oszlop bal felulrol kszamova 0,0 rol
     let col = parseInt(x / (CS / 8));
     console.log(row, col);
-    console.log(coordinates_2D[0][col]+coordinates_2D[1][7-row]);
+    console.log(coordinates_2D[0][col] + coordinates_2D[1][7 - row]);
 
     if (move_flag === false) {
         console.log("False a move_flag --> még nincs kijelolve babu");// nincs jelolve a babu
@@ -143,8 +147,87 @@ function canvas_click(event) {
             positions_of_figures_list[figure_row][figure_col] = 'x';
             draw_table();
             move_flag = false;
+            check();
         }
     }
-    document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
-
 }
+
+document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
+console.log(positions_of_figures_list);
+
+
+function get_white_king_position(list) {
+    list=positions_of_figures_list;
+    for(let i=0; i<8; i++){
+        for(let j=0; j<8; j++){
+            if(positions_of_figures_list[i][j]==='K'){
+                console.log("Világos király " + coordinates_2D[0][8-j] + coordinates_2D[1][7 - i] + '-n!');
+            }
+        }
+    }
+}
+
+function get_black_king_position(list) {
+    list=positions_of_figures_list;
+    for(let i=0; i<8; i++){
+        for(let j=0; j<8; j++){
+            if(positions_of_figures_list[i][j]==='k'){
+                console.log("Sötét király " + coordinates_2D[0][8-j] + coordinates_2D[1][7-i] + '-n!');
+            }
+        }
+    }
+}
+
+function piece_detector(list){
+     list=positions_of_figures_list;
+         for(let i=0; i<8; i++){
+        for(let j=0; j<8; j++){
+            if(positions_of_figures_list[i][j]==='k'){
+                console.log("Sötét király " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='K'){
+                console.log("Világos király " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='q'){
+                console.log("Sötét vezér " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='Q'){
+                console.log("Világos vezér " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='b'){
+                console.log("Sötét futó " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='B'){
+                console.log("Világos futó " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='n'){
+                console.log("Sötét huszár " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='N'){
+                console.log("Világos huszár " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='r'){
+                console.log("Sötét bástya " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='R'){
+                console.log("Világos bástya " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='p'){
+                console.log("Sötét gyalog " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+            else if(positions_of_figures_list[i][j]==='P'){
+                console.log("Világos gyalog " + coordinates_2D[0][j] + coordinates_2D[1][7-i] + '-n!');
+            }
+        }
+    }
+}
+
+function check(row, col) {
+    let coordinates = coordinates_2D[0][col] + coordinates_2D[1][7 - row];
+    if (positions_of_figures_list[row][col].includes(white_figures)) {
+
+    } else {
+
+    }
+}
+

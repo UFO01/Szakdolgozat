@@ -17,7 +17,6 @@ const FL = {
 
 const black_figures = ['r', 'n', 'b', 'q', 'k', 'p'];
 const white_figures = ['R', 'N', 'B', 'Q', 'K', 'P'];
-const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const coordinates_2D = [
     ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], ['1', '2', '3', '4', '5', '6', '7', '8']
 ];
@@ -38,16 +37,16 @@ canvas.onclick = canvas_click;
 
 function main(positions_of_figures, white_or_black, id) {
     document.getElementById('positions').value = positions_of_figures; //value
+    console.log(positions_of_figures);
     positions_of_figures_list = [];
     for (let i = 0; i < 8; i++) {
         positions_of_figures_list.push(positions_of_figures.slice(i * 8, (i + 1) * 8).split(''));
     }
-    coordinates('e8', positions_of_figures_list);
     pk = id;
     wob = white_or_black;
     draw_table();
     setInterval("api()", 3000);
-    legal_moves();
+    //coordinates('a7');
 }
 
 document.getElementById("reset").onclick = function () {
@@ -319,146 +318,332 @@ function get_empty_squares() {
 }
 
 function coordinates(coordinate) { //pl. f3-ra kiadja, hogy világos huszár
+    let legal_moves_one_piece = [];
     coordinate.split('');
+    //i függőleges elmozdulás, j vízszintes elmozdulás, a8:0,0 és h1:7,7, h8:0,7, a1:7,0
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
-            if (coordinate[0] === coordinates_2D[0][j] && coordinate[1] === coordinates_2D[1][7 - i]) {
-                if (positions_of_figures_list[i][j] === 'k') {
-                    console.log(coordinate + ": Sötét király");
-                } else if (positions_of_figures_list[i][j] === 'K') {
-                    console.log(coordinate + ": Világos király");
-                } else if (positions_of_figures_list[i][j] === 'q') {
-                    console.log(coordinate + ": Sötét vezér");
-                } else if (positions_of_figures_list[i][j] === 'Q') {
-                    console.log(coordinate + ": Világos vezér");
-                } else if (positions_of_figures_list[i][j] === 'b') {
-                    console.log(coordinate + ": Sötét futó");
-                } else if (positions_of_figures_list[i][j] === 'B') {
-                    console.log(coordinate + ": Világos futó");
-                } else if (positions_of_figures_list[i][j] === 'n') {
-                    console.log(coordinate + ": Sötét huszár");
-                } else if (positions_of_figures_list[i][j] === 'N') {
-                    console.log(coordinate + ": Világos huszár");
-                } else if (positions_of_figures_list[i][j] === 'r') {
-                    console.log(coordinate + ": Sötét bástya");
-                } else if (positions_of_figures_list[i][j] === 'R') {
-                    console.log(coordinate + ": Világos bástya");
-                } else if (positions_of_figures_list[i][j] === 'p') {
-                    console.log(coordinate + ": Sötét gyalog");
-                } else if (positions_of_figures_list[i][j] === 'P') {
-                    console.log(coordinate + ": Világos gyalog");
-                } else console.log(coordinate + ": Semmi");
+            if (coordinate[0] === coordinates_2D[0][j] && coordinate[1] === coordinates_2D[1][7 - i]) { //megtalálta
+                if (positions_of_figures_list[i][j] === 'x') {
+                    continue;
+                }
+                if (wob === 'White') { //az előbb lépett világos, most sötét jön
+
+                    if (positions_of_figures_list[i][j] === 'p') {
+                        if (positions_of_figures_list[i + 1][j] === 'x'/*és nincs abszolút kötésben*/) { //tud előre lépni
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j], coordinates_2D[1][8 - i]);
+
+                            if (coordinate[1] === '7' && positions_of_figures_list[i + 2][j] === 'x') { //tud előre kettőt lépni
+                                legal_moves_one_piece[coordinate].push(coordinates_2D[0][j], coordinates_2D[1][9 - i]);
+                            }
+                            if (positions_of_figures_list[i + 1][j + 1] !== 'x' && positions_of_figures_list[i + 1][j + 1] !== undefined && white_figures.includes(positions_of_figures_list[i+1][j+1])) { //tud jobbra ütni
+                                legal_moves_one_piece[coordinate].push(coordinates_2D[0][j + 1], coordinates_2D[1][8 - i])
+                            }
+                            if (positions_of_figures_list[i + 1][j - 1] !== 'x' && positions_of_figures_list[i + 1][j - 1] !== undefined && white_figures.includes(positions_of_figures_list[i+1][j-1])) { //tud balra ütni
+                                legal_moves_one_piece[coordinate].push(coordinates_2D[0][j - 1], coordinates_2D[1][8 - i]);
+                            }
+                        }
+                        continue;
+                    }
+                    if (positions_of_figures_list[i][j] === 'n') { //8 eset L-alakra
+                        if(coordinates_2D[0][j+2]!==undefined && coordinates_2D[1][8-i]!==undefined && !black_figures.includes(positions_of_figures_list[i+1][j+2]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j+2],coordinates_2D[1][8-i]);
+                        }
+                        if(coordinates_2D[0][j-2] !== undefined && coordinates_2D[1][8-i] !== undefined && !black_figures.includes(positions_of_figures_list[i+1][j-2]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j-2],coordinates_2D[1][8-i]);
+                        }
+                        if(coordinates_2D[0][j+2] !== undefined && coordinates_2D[1][6-i] !== undefined && !black_figures.includes(positions_of_figures_list[i-1][j+2]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j+2],coordinates_2D[1][6-i]);
+                        }
+                        if(coordinates_2D[0][j-2] !== undefined && coordinates_2D[1][6-i] !== undefined && !black_figures.includes(positions_of_figures_list[i-1][j-2]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j-2],coordinates_2D[1][6-i]);
+                        }
+                        if(coordinates_2D[0][j+1] !== undefined && coordinates_2D[1][9-i] !==undefined && !black_figures.includes(positions_of_figures_list[i+2][j+1]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j+1],coordinates_2D[1][9-i]);
+                        }
+                        if(coordinates_2D[0][j-1] !== undefined && coordinates_2D[1][9-i] !==undefined && !black_figures.includes(positions_of_figures_list[i+2][j-1]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j-1],coordinates_2D[1][9-i]);
+                        }
+                        if(coordinates_2D[0][j+1] !== undefined && coordinates_2D[1][5-i] !==undefined && !black_figures.includes(positions_of_figures_list[i-2][j+1]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j+1],coordinates_2D[1][5-i]);
+                        }
+                        if(coordinates_2D[0][j-1] !== undefined && coordinates_2D[1][5-i] !==undefined && !black_figures.includes(positions_of_figures_list[i-2][j-1]) /*és nincs abszolút kötésben*/){
+                            legal_moves_one_piece[coordinate].push(coordinates_2D[0][j-1],coordinates_2D[1][5-i]);
+                        }
+                        continue;
+                    }
+                    if (positions_of_figures_list[i][j] === 'b') {
+                        if(true /*és nincs abszolút kötésben (mindkét átlóra meg kell nézni)*/){
+                            let k=1;
+                            while(coordinates_2D[0][j+k] !== undefined && coordinates_2D[1][7-i+k] !==undefined && !black_figures.includes(positions_of_figures_list[i+k][j+k])) { //jobbra le
+                                legal_moves_one_piece[coordinate].push(coordinates_2D[0][j + k], coordinates_2D[1][7 - i + k]);
+                                if (white_figures.includes(positions_of_figures_list[i + k][j + k])) break;
+                                k++;
+                            }
+                            }
+                            k=1;
+                            while(coordinates_2D[0][j-k] !== undefined && coordinates_2D[1][7-i-k] !==undefined && !black_figures.includes(positions_of_figures_list[i-k][j-k])){ //balra fel
+                                legal_moves_one_piece[coordinate].push(coordinates_2D[0][j-k],coordinates_2D[1][7-i-k]);
+                                if(white_figures.includes(positions_of_figures_list[i-k][j-k])) break;
+                                k++;
+                        }
+                        if(true /*és nincs abszolút kötésben (mindkét átlóra meg kell nézni)*/){
+                            let k=1;
+                            while(coordinates_2D[0][j+k] !== undefined && coordinates_2D[1][7-i-k] !==undefined && !black_figures.includes(positions_of_figures_list[i+k][j+k])) { //jobbra fel
+                                legal_moves_one_piece[coordinate].push(coordinates_2D[0][j + k], coordinates_2D[1][7 - i - k]);
+                                if (white_figures.includes(positions_of_figures_list[i - k][j + k])) break;
+                                k++;
+                            }
+                            }
+                            k=1;
+                            while(coordinates_2D[0][j-k] !== undefined && coordinates_2D[1][7-i+k] !==undefined && !black_figures.includes(positions_of_figures_list[i-k][j-k])){ //balra le
+                                legal_moves_one_piece[coordinate].push(coordinates_2D[0][j-k],coordinates_2D[1][7-i+k]);
+                                if(white_figures.includes(positions_of_figures_list[i+k][j-k])) break;
+                                k++;
+                        }
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'r') {
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'q') {
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'k') {
+
+                    }
+                } else if (wob === 'Black' || wob === 'New') { //ha sötét lépett, vagy most kezdődik a parti, akkor világos lép
+                    if (positions_of_figures_list[i][j] === 'P') {
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'N') {
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'B') {
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'R') {
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'Q') {
+
+                    }
+                    if (positions_of_figures_list[i][j] === 'K') {
+
+                    }
+                } else
+                    console.log(wob);
+
             }
         }
     }
+    console.log(legal_moves_one_piece[coordinate]);
 }
 
+/*function piece_detector(coordinate = undefined) {
+    let piece_detector_list = [];
+    if (coordinate !== undefined) {
+        if (coordinates(coordinate) === 'k') {
+            return 'k';
+        }
+        if (coordinates(coordinate) === 'K') {
+            return 'K';
+        }
+        if (coordinates(coordinate) === 'q') {
+            return 'q';
+        }
+        if (coordinates(coordinate) === 'Q') {
+            return 'Q';
+        }
+        if (coordinates(coordinate) === 'r') {
+            return 'r';
+        }
+        if (coordinates(coordinate) === 'R') {
+            return 'R';
+        }
+        if (coordinates(coordinate) === 'b') {
+            return 'b';
+        }
+        if (coordinates(coordinate) === 'B') {
+            return 'B';
+        }
+        if (coordinates(coordinate) === 'n') {
+            return 'n';
+        }
+        if (coordinates(coordinate) === 'N') {
+            return 'N';
+        }
+        if (coordinates(coordinate) === 'p') {
+            return 'p';
+        }
+        if (coordinates(coordinate) === 'P') {
+            return 'P';
+        }
+        return 'x';
+    } else {
+        let segedtomb = [];
+        if (wob === "White") { //sötét lép
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (black_figures.includes(positions_of_figures_list[i][j])) {
+                        if (positions_of_figures_list[i][j] === 'k') {
+                            piece_detector_list.push(get_black_king_position());
+                        } else if (positions_of_figures_list[i][j] === 'q') {
+                            segedtomb = get_black_queens_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'b') {
+                            segedtomb = get_black_bishops_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'n') {
+                            segedtomb = get_black_knights_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'r') {
+                            segedtomb = get_black_rooks_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'p') {
+                            segedtomb = get_black_pawns_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'x') {
+                            get_empty_squares();
+                        }
+                    }
+                }
+            }
+            console.log("Sötét bábuk helye: " + piece_detector_list);
+        } else if (wob === "Black" || wob === "New") { //világos lép
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (white_figures.includes(positions_of_figures_list[i][j])) {
+                        if (positions_of_figures_list[i][j] === 'K') {
+                            segedtomb = get_white_king_position();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'Q') {
+                            segedtomb = get_white_queens_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'B') {
+                            segedtomb = get_white_bishops_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'N') {
+                            segedtomb = get_white_knights_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'R') {
+                            segedtomb = get_white_rooks_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'P') {
+                            segedtomb = get_white_pawns_positions();
+                            for (let k = 0; k < segedtomb.length; k++) {
+                                if (!piece_detector_list.includes(segedtomb[k])) {
+                                    piece_detector_list.push(segedtomb[k]);
+                                }
+                            }
+                        } else if (positions_of_figures_list[i][j] === 'x') {
+                            get_empty_squares();
+                        }
+                    }
+                    console.log(piece_detector_list);
+                }
+            }
+        } else alert('Kijátszották a rendszert!');
+        return piece_detector_list;
+    }
+}
 
-function legal_moves() {
+function legal_moves(coordinate=undefined) {
     let legal_moves_list = [];
-    let segedtomb = [];
-    if (wob === "White") { //sötét lép
-        for (let i = 0; i < 8; i++) {
-            for (let j = 0; j < 8; j++) {
-                if (black_figures.includes(positions_of_figures_list[i][j])) {
-                    if (positions_of_figures_list[i][j] === 'k') {
-                        legal_moves_list.push(get_black_king_position());
-                    } else if (positions_of_figures_list[i][j] === 'q') {
-                        segedtomb = get_black_queens_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
+    if(coordinate!==undefined){
+        piece_detector(coordinate);
+    }
+    let segedtomb = piece_detector();
+    for (let i = 0; i < segedtomb.length; i++) {
+        if (wob === "White") { //világos lépett, tehát sötét jön
+            //abszolút pinre figyelni, az még nincs lekezelve!
+            if (coordinates(segedtomb[i]) === 'p') {
+                if(segedtomb[i].split()[0])
+                if (get_empty_squares().includes(segedtomb[i].split()[1] - 1)) { // tud előre lépni
+                    if (segedtomb[i].split()[1] === 7) { //a gyalog még nem lépett
+                        if (get_empty_squares().includes(segedtomb[i].split()[1] - 2)) { //tud előre kettőt lépni
+
                         }
-                    } else if (positions_of_figures_list[i][j] === 'b') {
-                        segedtomb = get_black_bishops_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'n') {
-                        segedtomb = get_black_knights_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'r') {
-                        segedtomb = get_black_rooks_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'p') {
-                        segedtomb = get_black_pawns_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'x') {
-                        get_empty_squares();
                     }
+                    legal_moves_list.push()
                 }
             }
-        }
-        console.log("Sötét bábuk helye: " + legal_moves_list);
-    } else if (wob === "Black" || wob === "New") { //világos lép
-        for (i = 0; i < 8; i++) {
-            for (j = 0; j < 8; j++) {
-                if (white_figures.includes(positions_of_figures_list[i][j])) {
-                    if (positions_of_figures_list[i][j] === 'K') {
-                        segedtomb = get_white_king_position();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'Q') {
-                        segedtomb = get_white_queens_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'B') {
-                        segedtomb = get_white_bishops_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'N') {
-                        segedtomb = get_white_knights_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'R') {
-                        segedtomb = get_white_rooks_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'P') {
-                        segedtomb = get_white_pawns_positions();
-                        for (let k = 0; k < segedtomb.length; k++) {
-                            if (!legal_moves_list.includes(segedtomb[k])) {
-                                legal_moves_list.push(segedtomb[k]);
-                            }
-                        }
-                    } else if (positions_of_figures_list[i][j] === 'x') {
-                        get_empty_squares();
-                    }
-                }
-                console.log(legal_moves_list);
+            if (coordinates(segedtomb[i]) === 'n') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'b') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'r') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'q') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'k') {
+
+            }
+        } else if (wob === ("Black") || wob === "New") {
+            if (coordinates(segedtomb[i]) === 'P') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'N') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'B') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'R') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'Q') {
+
+            }
+            if (coordinates(segedtomb[i]) === 'K') {
+
             }
         }
-    } else alert('Kijátszották a rendszert!');
-    return legal_moves_list;
-}
+    }
+}*/
+
 

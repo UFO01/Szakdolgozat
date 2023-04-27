@@ -13,6 +13,7 @@ def index(request):
 
 #ha != helyett `is not`-ot írunk, akkor érvényesnek veszi a lépést, de nem lépi meg (de a lépésszámot növeli)
             if request.POST.get('positions') != Position.objects.last().positions_of_figures: #ha a mostani pozi NEM ugyanaz, mint a legutóbb elmentett felállás
+                # nem íródik felül a request?
                 p = Position()
                 p.positions_of_figures = request.POST.get('positions')
                 if p.positions_of_figures == 'rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR':

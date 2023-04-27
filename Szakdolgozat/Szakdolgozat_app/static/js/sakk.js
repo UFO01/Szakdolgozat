@@ -47,6 +47,7 @@ function main(positions_of_figures, white_or_black, id) {
     draw_table();
     setInterval("api()", 3000);
     //coordinates('a7');
+    legal_moves('a7');
 }
 
 document.getElementById("reset").onclick = function () {
@@ -144,12 +145,13 @@ function canvas_click(event) {
             positions_of_figures_list[figure_row][figure_col] = 'x';
             draw_table();
             move_flag = false;
+            document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
         }
-    }
-}
 
-document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
-console.log(positions_of_figures_list);
+    }
+    document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
+    console.log(positions_of_figures_list);
+}
 
 function get_white_king_position() {
     for (let i = 0; i < 8; i++) {
@@ -342,6 +344,7 @@ function legal_moves(coordinate) {
                                 legal_moves_per_coordinate[coordinate].push(coordinates_2D[0][j - 1], coordinates_2D[1][8 - i]);
                             }
                         }
+                        console.log(legal_moves_per_coordinate);
                         continue;
                     }
                     if (positions_of_figures_list[i][j] === 'n') { //8 eset L-alakra

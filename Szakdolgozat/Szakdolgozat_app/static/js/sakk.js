@@ -28,16 +28,17 @@ canvas.width = CS;
 canvas.height = CS;
 let ctx = canvas.getContext("2d");
 let positions_of_figures_list = [];
+let tmp = [];
 let wob;
 let pk;
 let figure_row, figure_col;
 let move_flag = false;
+let king_move_boolean;
 
 canvas.onclick = canvas_click;
 
 function main(positions_of_figures, white_or_black, id) {
     document.getElementById('positions').value = positions_of_figures; //value
-    console.log(positions_of_figures);
     positions_of_figures_list = [];
     for (let i = 0; i < 8; i++) {
         positions_of_figures_list.push(positions_of_figures.slice(i * 8, (i + 1) * 8).split(''));
@@ -46,8 +47,9 @@ function main(positions_of_figures, white_or_black, id) {
     wob = white_or_black;
     draw_table();
     setInterval("api()", 3000);
-    //coordinates('a7');
-    legal_moves('e5');
+    get_white_pieces_informations();
+    get_black_pieces_informations();
+    console.log(move('g8f6'));
 }
 
 document.getElementById("reset").onclick = function () {
@@ -56,7 +58,7 @@ document.getElementById("reset").onclick = function () {
 
 
 function api() {
-    console.log("Hello")
+    //console.log("Lefutott egy AJAX kérés");
     $.ajax({
         url: 'api',
         data: {
@@ -75,7 +77,7 @@ function draw_table() {
     ctx.fillRect(0, 0, 100, 100);
     ctx.fillStyle = "#BBB";
 
-    for (let i = 0; i < 8; i += 2) { // szurke negyzetek szinezese
+    for (let i = 0; i < 8; i += 2) { // szürke négyzetek színezése
         for (let j = 1; j < 8; j += 2) {
             ctx.fillRect(j * CS / 8, i * CS / 8, CS / 8, CS / 8);
             ctx.fillRect((j - 1) * CS / 8, (i + 1) * CS / 8, CS / 8, CS / 8);
@@ -83,18 +85,18 @@ function draw_table() {
     }
 
     ctx.fillStyle = "#ffffff";
-    for (let i = 0; i < 8; i += 2) { //  feher negyzetek szinezese
+    for (let i = 0; i < 8; i += 2) { //  fehér négyzetek színezése
         for (let j = 0; j < 9; j += 2) {
             ctx.fillRect(j * CS / 8, i * CS / 8, CS / 8, CS / 8);
             ctx.fillRect((j - 1) * CS / 8, (i + 1) * CS / 8, CS / 8, CS / 8);
         }
     }
 
-    ctx.fillStyle = "#000"; // babuk szinei
+    ctx.fillStyle = "#000"; // bábuk színei
     ctx.font = "100px Arial";
     ctx.textAlign = "center";
 
-    for (let i = 0; i < 8; i++) { // babuk pozicionalasa
+    for (let i = 0; i < 8; i++) { // babuk pozícionálása
         for (let j = 0; j < 8; j++) {
             ctx.fillText(FL[positions_of_figures_list[i][j]], j * CS / 8 + CS / 16, i * CS / 8 + CS / 16 + CS / 23);
         }
@@ -113,13 +115,10 @@ function canvas_click(event) {
     console.log(row, col);
     console.log(coordinates_2D[0][col] + coordinates_2D[1][7 - row]);
 
-    if (move_flag === false) {
-        console.log("False a move_flag --> még nincs kijelolve babu");// nincs jelolve a babu
+    if (move_flag === false) { //nincs kijelölve
         if (positions_of_figures_list[row][col] !== 'x') {
-            console.log("Nem üres mező");
             if ((wob === "White" && black_figures.includes(positions_of_figures_list[row][col])) ||
                 ((wob === "Black" || wob === "New") && white_figures.includes(positions_of_figures_list[row][col]))) {
-                console.log("Kijelölés");
                 ctx.beginPath();
                 ctx.lineWidth = "10";
                 ctx.strokeStyle = "darkred";
@@ -129,18 +128,12 @@ function canvas_click(event) {
                 figure_row = row;
                 figure_col = col;
             }
-        } else {
-            let res = prompt('Rescued figure (r, n, b, q, k, p, R, N, B, Q, K, P, x):');
-            positions_of_figures_list[row][col] = (['r', 'n', 'b', 'q', 'k', 'p', 'R', 'N', 'B', 'Q', 'K', 'P', 'x'].includes(res) ? res : 'x');
-            draw_table();
         }
-    } else { // ki van jelolve a babu
+    } else { // ki van jelölve
         if (row === figure_row && col === figure_col) {
-            console.log("Kijelölés vissza");
             draw_table();
             move_flag = false;
         } else {
-            console.log("Átmozgatás");
             positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
             positions_of_figures_list[figure_row][figure_col] = 'x';
             draw_table();
@@ -150,14 +143,130 @@ function canvas_click(event) {
 
     }
     document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
-    console.log(positions_of_figures_list);
 }
 
-function get_white_king_position() {
+function move(notation) {
+    let bennevan = false;
+    let darabolt = notation.split('');
+    let row_what = 7 - coordinates_2D[1].indexOf((darabolt[1]));
+    let col_what = coordinates_2D[0].indexOf((darabolt[0]));
+    let row_where = 7 - coordinates_2D[1].indexOf((darabolt[darabolt.length - 1]));
+    let col_where = coordinates_2D[0].indexOf((darabolt[darabolt.length - 2]));
+    let piece = positions_of_figures_list[row_what][col_what];
+    let vilagos_lehetosegek = get_white_pieces_informations();
+    let sotet_lehetosegek = get_black_pieces_informations();
+    if (wob === "White") {
+        for (let i = 0; i < sotet_lehetosegek.length; i++) {
+            for (let j = 0; j < sotet_lehetosegek[i].length; j++) {
+                if (sotet_lehetosegek[i][j] === notation) {
+                    bennevan = true;
+                    break;
+                }
+            }
+        }
+    } else {
+        for (let i = 0; i < vilagos_lehetosegek.length; i++) {
+            for (let j = 0; j < vilagos_lehetosegek[i].length; j++) {
+                if (vilagos_lehetosegek[i][j] === notation) {
+                    bennevan = true;
+                    break;
+                }
+            }
+        }
+    }
+    if (bennevan) {
+        tmp=positions_of_figures_list;
+        tmp[row_what][col_what] = 'x';
+        tmp[row_where][col_where] = piece;
+        king_move_boolean = piece === 'k' || piece === 'K';
+        if (check_for_checks(tmp)) {
+            return positions_of_figures_list;
+        } else {
+            tmp = positions_of_figures_list;
+            tmp[row_what][col_what] = 'x';
+            tmp[row_where][col_where] = piece;
+            return tmp;
+        }
+    } else return positions_of_figures_list;
+}
+
+function check_for_checks() {
+    let vilagos_lehetosegek = get_white_pieces_informations(tmp);
+    let sotet_lehetosegek = get_black_pieces_informations(tmp);
+    let white_king_pos = get_white_king_position(tmp);
+    let black_king_pos = get_black_king_position(tmp);
+    let sakk = false;
+    if (wob === "White") {
+        for (let i = 0; i < sotet_lehetosegek.length; i++) { //megnézzük sötét lehetséges lépésit
+            for (let j = 0; j < sotet_lehetosegek[i].length; j++) {
+                if (king_move_boolean) {
+                    white_king_pos = get_white_king_position(tmp);
+                    if (sotet_lehetosegek[i][j].split('x')[1] === white_king_pos) {
+                        sakk = true;
+                    }
+                } else {
+                    if (sotet_lehetosegek[i][j].split('x')[1] === white_king_pos) sakk = true;
+                }
+            }
+        }
+    } else if (wob === "Black" || wob === "New") {
+        for (let i = 0; i < vilagos_lehetosegek.length; i++) { //világos lépései
+            for (let j = 0; j < vilagos_lehetosegek[i].length; j++) {
+                if (king_move_boolean) {
+                    black_king_pos = get_black_king_position(tmp);
+                    if (vilagos_lehetosegek[i][j].split('x')[1] === black_king_pos) sakk = true;
+                }
+                if (vilagos_lehetosegek[i][j].split('x')[1] === black_king_pos) sakk = true;
+            }
+        }
+    }
+    return sakk;
+}
+
+function get_white_pieces_informations(list = positions_of_figures_list) {
+    let whitelist = [];
+    let every_legal_move = [];
+    whitelist.push(get_white_king_position(list));
+    whitelist.push(get_white_queens_positions(list));
+    whitelist.push(get_white_rooks_positions(list));
+    whitelist.push(get_white_bishops_positions(list));
+    whitelist.push(get_white_knights_positions(list));
+    whitelist.push(get_white_pawns_positions(list));
+    for (let i = 0; i < whitelist.length; i++) {
+        if (whitelist[i] instanceof Array) {
+            for (let j = 0; j < whitelist[i].length; j++) {
+                every_legal_move.push(legal_moves(whitelist[i][j]));
+            }
+
+        } else
+            every_legal_move.push(legal_moves(whitelist[i]));
+    }
+    return every_legal_move;
+}
+
+function get_black_pieces_informations(list = positions_of_figures_list) {
+    let blacklist = [];
+    let every_legal_move = [];
+    blacklist.push(get_black_king_position(list));
+    blacklist.push(get_black_queens_positions(list));
+    blacklist.push(get_black_rooks_positions(list));
+    blacklist.push(get_black_bishops_positions(list));
+    blacklist.push(get_black_knights_positions(list));
+    blacklist.push(get_black_pawns_positions(list));
+    for (let i = 0; i < blacklist.length; i++) {
+        for (let j = 0; j < blacklist[i].length; j++) {
+            every_legal_move.push(legal_moves(blacklist[i][j]));
+        }
+    }
+    every_legal_move.push(legal_moves(get_black_king_position()));
+    return every_legal_move;
+}
+
+function get_white_king_position(list = positions_of_figures_list) {
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
-            if (positions_of_figures_list[i][j] === 'K') {
-                console.log("Világos király " + coordinates_2D[0][8 - j] + coordinates_2D[1][7 - i] + '-n!');
+            if (list[i][j] === 'K') {
+                //console.log("Világos király " + coordinates_2D[0][j] + coordinates_2D[1][7 - i] + '-n!');
                 return coordinates_2D[0][j] + coordinates_2D[1][7 - i];
             }
         }
@@ -168,7 +277,7 @@ function get_black_king_position() {
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
             if (positions_of_figures_list[i][j] === 'k') {
-                console.log("Sötét király: " + coordinates_2D[0][8 - j] + coordinates_2D[1][7 - i]);
+                //console.log("Sötét király: " + coordinates_2D[0][j] + coordinates_2D[1][7 - i]);
                 return coordinates_2D[0][j] + coordinates_2D[1][7 - i];
             }
         }
@@ -184,7 +293,7 @@ function get_white_queens_positions() {
             }
         }
     }
-    console.log("Világos vezér(ek): " + vilagos_vezerek);
+    //console.log("Világos vezér(ek): " + vilagos_vezerek);
     return vilagos_vezerek;
 }
 
@@ -197,7 +306,7 @@ function get_black_queens_positions() {
             }
         }
     }
-    console.log("Sötét vezér(ek): " + sotet_vezerek);
+    //console.log("Sötét vezér(ek): " + sotet_vezerek);
     return sotet_vezerek;
 }
 
@@ -210,7 +319,7 @@ function get_white_rooks_positions() {
             }
         }
     }
-    console.log("Világos bástyák: " + vilagos_bastyak);
+    //console.log("Világos bástyák: " + vilagos_bastyak);
     return vilagos_bastyak;
 }
 
@@ -223,7 +332,7 @@ function get_black_rooks_positions() {
             }
         }
     }
-    console.log("Sötét bástyák: " + sotet_bastyak);
+    //console.log("Sötét bástyák: " + sotet_bastyak);
     return sotet_bastyak;
 }
 
@@ -236,7 +345,7 @@ function get_white_bishops_positions() {
             }
         }
     }
-    console.log("Világos futók: " + vilagos_futok);
+    //console.log("Világos futók: " + vilagos_futok);
     return vilagos_futok;
 }
 
@@ -249,7 +358,7 @@ function get_black_bishops_positions() {
             }
         }
     }
-    console.log("Sötét futók: " + sotet_futok);
+    //console.log("Sötét futók: " + sotet_futok);
     return sotet_futok;
 }
 
@@ -262,7 +371,7 @@ function get_white_knights_positions() {
             }
         }
     }
-    console.log("Világos huszárok: " + vilagos_huszarok);
+    //console.log("Világos huszárok: " + vilagos_huszarok);
     return vilagos_huszarok;
 }
 
@@ -275,7 +384,7 @@ function get_black_knights_positions() {
             }
         }
     }
-    console.log("Sötét huszárok: " + sotet_huszarok);
+    //console.log("Sötét huszárok: " + sotet_huszarok);
     return sotet_huszarok;
 }
 
@@ -288,7 +397,7 @@ function get_white_pawns_positions() {
             }
         }
     }
-    console.log("Világos gyalogok: " + vilagos_gyalogok);
+    //console.log("Világos gyalogok: " + vilagos_gyalogok);
     return vilagos_gyalogok;
 }
 
@@ -301,7 +410,7 @@ function get_black_pawns_positions() {
             }
         }
     }
-    console.log("Sötét gyalogok: " + sotet_gyalogok);
+    //console.log("Sötét gyalogok: " + sotet_gyalogok);
     return sotet_gyalogok;
 }
 
@@ -314,15 +423,12 @@ function get_empty_squares() {
             }
         }
     }
-    console.log("Üres mezők: " + ures);
+    //console.log("Üres mezők: " + ures);
     return ures;
 }
 
-
 function legal_moves(coordinate) {
     let legal_moves_per_coordinate = [];
-    let legal_moves_white = [];
-    let legal_moves_black = [];
 
     coordinate.split('');
     //i függőleges elmozdulás, j vízszintes elmozdulás, a8:0,0 és h1:7,7, h8:0,7, a1:7,0
@@ -330,629 +436,572 @@ function legal_moves(coordinate) {
         for (let j = 0; j < 8; j++) {
             if (coordinate[0] === coordinates_2D[0][j] && coordinate[1] === coordinates_2D[1][7 - i]) { //megtalálta
                 if (positions_of_figures_list[i][j] === 'x') {
+                } else if (positions_of_figures_list[i][j] === 'p') {
+                    if (positions_of_figures_list[i + 1][j] === 'x') { //tud előre lépni
+                        legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
+
+                        if (coordinate[1] === '7' && positions_of_figures_list[i + 2][j] === 'x') { //tud előre kettőt lépni
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][5 - i]);
+                        }
+                    }
+                    if (positions_of_figures_list[i + 1][j + 1] !== 'x' && positions_of_figures_list[i + 1][j + 1] !== undefined && white_figures.includes(positions_of_figures_list[i + 1][j + 1]) && positions_of_figures_list[i + 1][j + 1] !== undefined) { //tud jobbra ütni
+                        legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i])
+                    }
+                    if (positions_of_figures_list[i + 1][j - 1] !== 'x' && positions_of_figures_list[i + 1][j - 1] !== undefined && white_figures.includes(positions_of_figures_list[i + 1][j - 1]) && positions_of_figures_list[i + 1][j - 1] !== undefined) { //tud balra ütni
+                        legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
+                    }
+                } else if (positions_of_figures_list[i][j] === 'n') { //8 eset L-alakra
+                    if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j + 2]) && positions_of_figures_list[i + 1][j + 2] !== undefined /*és nincs abszolút kötésben*/) { //kettőt jobbra, egyet le
+                        if (white_figures.includes(positions_of_figures_list[i + 1][j + 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j - 2]) && positions_of_figures_list[i + 1][j - 2] !== undefined /*és nincs abszolút kötésben*/) { //kettőt balra, egyet le
+                        if (white_figures.includes(positions_of_figures_list[i + 1][j - 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j + 2]) && positions_of_figures_list[i - 1][j + 2] !== undefined  /*és nincs abszolút kötésben*/) {
+                        if (white_figures.includes(positions_of_figures_list[i - 1][j + 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j - 2] && positions_of_figures_list[i - 1][j - 2] !== undefined) /*és nincs abszolút kötésben*/) {
+                        if (white_figures.includes(positions_of_figures_list[i - 1][j - 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]); //kettőt balra, egyet fel
+                        }
+                    }
+                    if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 2][j + 1]) && positions_of_figures_list[i + 2][j + 1] !== undefined /*és nincs abszolút kötésben*/) {
+                        if (white_figures.includes(positions_of_figures_list[i + 2][j + 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 2][j - 1]) && positions_of_figures_list[i + 2][j - 1] !== undefined /*és nincs abszolút kötésben*/) {
+                        if (white_figures.includes(positions_of_figures_list[i + 2][j - 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 2][j + 1] && positions_of_figures_list[i - 2][j + 1] !== undefined) /*és nincs abszolút kötésben*/) { //egyet jobbra, kettőt fel
+                        if (white_figures.includes(positions_of_figures_list[i - 2][j + 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 2][j - 1] && positions_of_figures_list[i - 2][j - 1] !== undefined) /*és nincs abszolút kötésben*/) {//egyet balra, kettőt fel
+                        if (white_figures.includes(positions_of_figures_list[i - 2][j - 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
+                        }
+                    }
                     continue;
-                }
-                if (wob === 'White') { //az előbb lépett világos, most sötét jön
-
-                    if (positions_of_figures_list[i][j] === 'p') {
-                        if (positions_of_figures_list[i + 1][j] === 'x'/*és nincs abszolút kötésben*/) { //tud előre lépni
-                            legal_moves_per_coordinate.push(coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
-
-                            if (coordinate[1] === '7' && positions_of_figures_list[i + 2][j] === 'x') { //tud előre kettőt lépni
-                                legal_moves_per_coordinate.push(coordinates_2D[0][j] + coordinates_2D[1][5 - i]);
-                            }
-                        }
-                        if (positions_of_figures_list[i + 1][j + 1] !== 'x' && positions_of_figures_list[i + 1][j + 1] !== undefined && white_figures.includes(positions_of_figures_list[i + 1][j + 1])) { //tud jobbra ütni
-                            legal_moves_per_coordinate.push(coordinates_2D[0][j] + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i])
-                        }
-                        if (positions_of_figures_list[i + 1][j - 1] !== 'x' && positions_of_figures_list[i + 1][j - 1] !== undefined && white_figures.includes(positions_of_figures_list[i + 1][j - 1])) { //tud balra ütni
-                            console.log("Balra üt");
-                            legal_moves_per_coordinate.push(coordinates_2D[0][j] + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
-                        }
-                        console.log(legal_moves_per_coordinate);
-                        continue;
-                    }
-                    if (positions_of_figures_list[i][j] === 'n') { //8 eset L-alakra
-                        if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j + 2]) /*és nincs abszolút kötésben*/) { //kettőt jobbra, egyet le
-                            if (white_figures.includes(positions_of_figures_list[i + 1][j + 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
-                                console.log('Nx' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
-                                console.log("1:" + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i])
-                                console.log(positions_of_figures_list[i + 1][j + 2]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j - 2]) /*és nincs abszolút kötésben*/) { //kettőt balra, egyet le
-                            if (white_figures.includes(positions_of_figures_list[i + 1][j - 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j + 2]) /*és nincs abszolút kötésben*/) {
-                            if (white_figures.includes(positions_of_figures_list[i - 1][j + 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j - 2]) /*és nincs abszolút kötésben*/) {
-                            if (white_figures.includes(positions_of_figures_list[i - 1][j - 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]); //kettőt balra, egyet fel
-                            }
-                        }
-                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 2][j + 1]) /*és nincs abszolút kötésben*/) {
-                            if (white_figures.includes(positions_of_figures_list[i + 2][j + 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 2][j - 1]) /*és nincs abszolút kötésben*/) {
-                            if (white_figures.includes(positions_of_figures_list[i + 2][j - 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 2][j + 1]) /*és nincs abszolút kötésben*/) { //egyet jobbra, kettőt fel
-                            if (white_figures.includes(positions_of_figures_list[i - 2][j + 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 2][j - 1]) /*és nincs abszolút kötésben*/) {//egyet balra, kettőt fel
-                            if (white_figures.includes(positions_of_figures_list[i - 2][j - 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
-                            }
-                        }
-                        //console.log(legal_moves_per_coordinate);
-                        continue;
-                    }
-                    if (positions_of_figures_list[i][j] === 'b') {
-                        if (true /*és nincs abszolút kötésben főátlóra, vagy vízszintesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j + k])) { //jobbra le
-                                if (white_figures.includes(positions_of_figures_list[i + k][j + k])) {
-                                    legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('B' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    k++;
-                                }
-                            }
-                        }
-                        k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j - k])) { //balra fel
-                            if (white_figures.includes(positions_of_figures_list[i - k][j - k])) {
-                                legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                } else if (positions_of_figures_list[i][j] === 'b') {
+                    if (true /*és nincs abszolút kötésben főátlóra, vagy vízszintesen vagy függőlegesen*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j + k]) && positions_of_figures_list[i + k][j + k] !== undefined) { //jobbra le
+                            if (white_figures.includes(positions_of_figures_list[i + k][j + k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
                                 break;
                             } else {
-                                legal_moves_per_coordinate.push('B' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
                                 k++;
                             }
                         }
-                        if (true /*és nincs abszolút kötésben mellékátlóra vagy vízsinztesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j + k])) { //jobbra fel
-                                if (white_figures.includes(positions_of_figures_list[i - k][j + k])) {
-                                    legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('B' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    k++;
-                                }
-                            }
-                        }
-                        k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j - k])) { //balra le
-                            if (white_figures.includes(positions_of_figures_list[i + k][j - k])) {
-                                legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
-                                break;
-                            } else legal_moves_per_coordinate.push('B' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                    }
+                    k = 1;
+                    while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j - k]) && positions_of_figures_list[i - k][j - k] !== undefined) { //balra fel
+                        if (white_figures.includes(positions_of_figures_list[i - k][j - k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
                             k++;
                         }
                     }
-                    if (positions_of_figures_list[i][j] === 'r') {
-                        if (true /*és nincs vízszintesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
-                            let k = 1;
-                            console.log('FischPferd!');
-                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j])) { //le
-                                if (white_figures.includes(positions_of_figures_list[i + k][j])) {
-                                    legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('R' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
-                                    k++;
-                                    console.log("Lefele");
-                                }
-                            }
-                            k = 1;
-                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j])) { //fel
-                                if (white_figures.includes(positions_of_figures_list[i - k][j])) {
-                                    legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('R' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
-                                    k++;
-                                }
-                                console.log("Felfele");
-                            }
-                        }
-                        if (true /*és nincs függőlegesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j - k])) { //balra
-                                if (white_figures.includes(positions_of_figures_list[i][j - k])) {
-                                    legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('R' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
-                                    k++;
-                                    console.log("Csárdás balra");
-                                }
-                            }
-                            k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j + k])) { //jobbra
-                                if (white_figures.includes(positions_of_figures_list[i][j + k])) {
-                                    legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('R' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
-                                    k++;
-                                    console.log("Csárdás jobbra");
-                                }
-                            }
-                        }
-                    }
-                    if (positions_of_figures_list[i][j] === 'q') {
-                        if (true /*és nincs abszolút kötésben főátlóra, vagy vízszintesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j + k])) { //jobbra le
-                                if (white_figures.includes(positions_of_figures_list[i + k][j + k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    k++;
-                                }
-                            }
-                        }
-                        k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j - k])) { //balra fel
-                            if (white_figures.includes(positions_of_figures_list[i - k][j - k])) {
-                                legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                    if (true /*és nincs abszolút kötésben mellékátlóra vagy vízsinztesen vagy függőlegesen*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j + k]) && positions_of_figures_list[i - k][j + k] !== undefined) { //jobbra fel
+                            if (white_figures.includes(positions_of_figures_list[i - k][j + k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
                                 break;
                             } else {
-                                legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
                                 k++;
                             }
                         }
-                        if (true /*és nincs abszolút kötésben mellékátlóra vagy vízsinztesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j + k])) { //jobbra fel
-                                if (white_figures.includes(positions_of_figures_list[i - k][j + k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    k++;
-                                }
+                    }
+                    k = 1;
+                    while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j - k]) && positions_of_figures_list[i + k][j - k] !== undefined) { //balra le
+                        if (white_figures.includes(positions_of_figures_list[i + k][j - k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                            break;
+                        } else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                        k++;
+                    }
+                } else if (positions_of_figures_list[i][j] === 'r') {
+                    if (true /*és nincs vízszintesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j]) && positions_of_figures_list[i + k][j] !== undefined) { //le
+                            if (white_figures.includes(positions_of_figures_list[i + k][j])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
+                                k++;
                             }
                         }
                         k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j - k])) { //balra le
-                            if (white_figures.includes(positions_of_figures_list[i + k][j - k])) {
-                                legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                        while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j]) && positions_of_figures_list[i - k][j] !== undefined) { //fel
+                            if (white_figures.includes(positions_of_figures_list[i - k][j])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
                                 break;
-                            } else legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
+                                k++;
+                            }
+                        }
+                    }
+                    if (true /*és nincs függőlegesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j - k]) && positions_of_figures_list[i][j - k] !== undefined) { //balra
+                            if (white_figures.includes(positions_of_figures_list[i][j - k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + +coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                k++;
+                            }
+                        }
+                        k = 1;
+                        while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j + k]) && positions_of_figures_list[i][j + k] !== undefined) { //jobbra
+                            if (white_figures.includes(positions_of_figures_list[i][j + k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                k++;
+                            }
+                        }
+                    }
+                } else if (positions_of_figures_list[i][j] === 'q') {
+                    let k = 1;
+                    while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j + k]) && positions_of_figures_list[i + k][j + k] !== undefined) { //jobbra le
+                        if (white_figures.includes(positions_of_figures_list[i + k][j + k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
                             k++;
                         }
-                        if (true /*és nincs vízszintesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
-                            let k = 1;
-                            console.log('FischPferd!');
-                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j])) { //le
-                                if (white_figures.includes(positions_of_figures_list[i + k][j])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
-                                    k++;
-                                    console.log("Lefele");
-                                }
-                            }
-                            k = 1;
-                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j])) { //fel
-                                if (white_figures.includes(positions_of_figures_list[i - k][j])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
-                                    k++;
-                                }
-                                console.log("Felfele");
-                            }
-                        }
-                        if (true /*és nincs függőlegesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j - k])) { //balra
-                                if (white_figures.includes(positions_of_figures_list[i][j - k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
-                                    k++;
-                                    console.log("Csárdás balra");
-                                }
-                            }
-                            k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j + k])) { //jobbra
-                                if (white_figures.includes(positions_of_figures_list[i][j + k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
-                                    k++;
-                                    console.log("Csárdás jobbra");
-                                }
-                            }
+                    }
+                    k = 1;
+                    while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j - k]) && positions_of_figures_list[i - k][j - k] !== undefined) { //balra fel
+                        if (white_figures.includes(positions_of_figures_list[i - k][j - k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                            k++;
                         }
                     }
-                    if (positions_of_figures_list[i][j] === 'k') {
-                        if (true /*és nem lép sakkba*/) {
-                            if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j])) { //le
-                                if (white_figures.includes(positions_of_figures_list[i + 1][j])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
-                            }
-                            if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j])) { //fel
-                                if (white_figures.includes(positions_of_figures_list[i - 1][j])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
-                                console.log("???");
-                            }
-                            if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j - 1])) { //balra
-                                if (white_figures.includes(positions_of_figures_list[i][j - 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
-                            }
-                            if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j + 1])) { //jobbra
-                                if (white_figures.includes(positions_of_figures_list[i][j + 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j + 1]+coordinates_2D[1][7 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j + 1] + coordinates_2D[1][7 - i]);
-                            }
-                            if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j + 1])) { //jobbra le
-                                if (white_figures.includes(positions_of_figures_list[i + 1][j + 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j + 1]+coordinates_2D[1][6 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i]);
-                            }
-                            if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j - 1])) { //balra fel
-                                if (white_figures.includes(positions_of_figures_list[i - 1][j - 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
-                            }
-                            if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j + 1])) { //jobbra fel
-                                if (white_figures.includes(positions_of_figures_list[i - 1][j + 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
-                            }
-                            if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j - 1])) { //balra le
-                                if (white_figures.includes(positions_of_figures_list[i + 1][j - 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
-                            }
+                    k = 1;
+                    while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j + k]) && positions_of_figures_list[i - k][j + k] !== undefined) { //jobbra fel
+                        if (white_figures.includes(positions_of_figures_list[i - k][j + k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
+                            k++;
                         }
                     }
-                } else if (wob === 'Black' || wob === 'New') { //ha sötét lépett, vagy most kezdődik a parti, akkor világos lép
-                    if (positions_of_figures_list[i][j] === 'P') {
-                        if (positions_of_figures_list[i - 1][j] === 'x'/*és nincs abszolút kötésben*/) { //tud előre lépni
-                            legal_moves_per_coordinate.push(coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
-
-                            if (coordinate[1] === '7' && positions_of_figures_list[i + 2][j] === 'x') { //tud előre kettőt lépni
-                                legal_moves_per_coordinate.push(coordinates_2D[0][j] + coordinates_2D[1][9 - i]);
-                            }
-                        }
-                        if (positions_of_figures_list[i - 1][j + 1] !== 'x' && positions_of_figures_list[i - 1][j + 1] !== undefined && black_figures.includes(positions_of_figures_list[i - 1][j + 1])) { //tud jobbra ütni
-                            legal_moves_per_coordinate.push(coordinates_2D[0][j] + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i])
-                        }
-                        if (positions_of_figures_list[i - 1][j - 1] !== 'x' && positions_of_figures_list[i - 1][j - 1] !== undefined && black_figures.includes(positions_of_figures_list[i - 1][j - 1])) { //tud balra ütni
-                            console.log("Balra üt");
-                            legal_moves_per_coordinate.push(coordinates_2D[0][j] + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
-                        }
-                        console.log(legal_moves_per_coordinate);
-                        continue;
+                    k = 1;
+                    while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j - k]) && positions_of_figures_list[i + k][j - k] !== undefined) { //balra le
+                        if (white_figures.includes(positions_of_figures_list[i + k][j - k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                            break;
+                        } else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                        k++;
                     }
-                    if (positions_of_figures_list[i][j] === 'N') {
-                        if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j + 2]) /*és nincs abszolút kötésben*/) { //kettőt jobbra, egyet le
-                            if (black_figures.includes(positions_of_figures_list[i + 1][j + 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
-                                console.log('Nx' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
-                                console.log("1:" + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i])
-                                console.log(positions_of_figures_list[i + 1][j + 2]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j - 2]) /*és nincs abszolút kötésben*/) { //kettőt balra, egyet le
-                            if (black_figures.includes(positions_of_figures_list[i + 1][j - 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j + 2]) /*és nincs abszolút kötésben*/) {
-                            if (black_figures.includes(positions_of_figures_list[i - 1][j + 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j - 2]) /*és nincs abszolút kötésben*/) {
-                            if (black_figures.includes(positions_of_figures_list[i - 1][j - 2])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]); //kettőt balra, egyet fel
-                            }
-                        }
-                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 2][j + 1]) /*és nincs abszolút kötésben*/) {
-                            if (black_figures.includes(positions_of_figures_list[i + 2][j + 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 2][j - 1]) /*és nincs abszolút kötésben*/) {
-                            if (black_figures.includes(positions_of_figures_list[i + 2][j - 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 2][j + 1]) /*és nincs abszolút kötésben*/) { //egyet jobbra, kettőt fel
-                            if (black_figures.includes(positions_of_figures_list[i - 2][j + 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
-                            }
-                        }
-                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 2][j - 1]) /*és nincs abszolút kötésben*/) {//egyet balra, kettőt fel
-                            if (black_figures.includes(positions_of_figures_list[i - 2][j - 1])) {
-                                legal_moves_per_coordinate.push('Nx' + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
-                            } else {
-                                legal_moves_per_coordinate.push('N' + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
-                            }
-                        }
-                        //console.log(legal_moves_per_coordinate);
-                        continue;
-                    }
-                    if (positions_of_figures_list[i][j] === 'B') {
-                        if (true /*és nincs abszolút kötésben főátlóra, vagy vízszintesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j + k])) { //jobbra le
-                                if (black_figures.includes(positions_of_figures_list[i + k][j + k])) {
-                                    legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('B' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    k++;
-                                }
-                            }
-                        }
-                        k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j - k])) { //balra fel
-                            if (black_figures.includes(positions_of_figures_list[i - k][j - k])) {
-                                legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                    if (true /*és nincs vízszintesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !black_figures.includes(positions_of_figures_list[i + k][j]) && positions_of_figures_list[i + k][j] !== undefined) { //le
+                            if (white_figures.includes(positions_of_figures_list[i + k][j])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
                                 break;
                             } else {
-                                legal_moves_per_coordinate.push('B' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
                                 k++;
                             }
                         }
-                        if (true /*és nincs abszolút kötésben mellékátlóra vagy vízsinztesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j + k])) { //jobbra fel
-                                if (black_figures.includes(positions_of_figures_list[i - k][j + k])) {
-                                    legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('B' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    k++;
-                                }
+                        k = 1;
+                        while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !black_figures.includes(positions_of_figures_list[i - k][j]) && positions_of_figures_list[i - k][j] !== undefined) { //fel
+                            if (white_figures.includes(positions_of_figures_list[i - k][j])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
+                                k++;
+                            }
+                        }
+                    }
+                    if (true /*és nincs függőlegesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j - k]) && positions_of_figures_list[i][j - k] !== undefined) { //balra
+                            if (white_figures.includes(positions_of_figures_list[i][j - k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                k++;
                             }
                         }
                         k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j - k])) { //balra le
+                        while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j + k]) && positions_of_figures_list[i][j + k] !== undefined) { //jobbra
+                            if (white_figures.includes(positions_of_figures_list[i][j + k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                k++;
+                            }
+                        }
+                    }
+                } else if (positions_of_figures_list[i][j] === 'k') {
+                    if (true /*és nem lép sakkba*/) {
+                        if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j]) && positions_of_figures_list[i + 1][j] !== undefined) { //le
+                            if (white_figures.includes(positions_of_figures_list[i + 1][j])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
+                        }
+                        if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j]) && positions_of_figures_list[i - 1][j] !== undefined) { //fel
+                            if (white_figures.includes(positions_of_figures_list[i - 1][j])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
+                        }
+                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j - 1]) && positions_of_figures_list[i][j - 1] !== undefined) { //balra
+                            if (white_figures.includes(positions_of_figures_list[i][j - 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
+                        }
+                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i][j + 1]) && positions_of_figures_list[i][j + 1] !== undefined) { //jobbra
+                            if (white_figures.includes(positions_of_figures_list[i][j + 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][7 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][7 - i]);
+                        }
+                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j + 1]) && positions_of_figures_list[i + 1][j + 1] !== undefined) { //jobbra le
+                            if (white_figures.includes(positions_of_figures_list[i + 1][j + 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i]);
+                        }
+                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j - 1]) && positions_of_figures_list[i - 1][j - 1] !== undefined) { //balra fel
+                            if (white_figures.includes(positions_of_figures_list[i - 1][j - 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
+                        }
+                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i - 1][j + 1]) && positions_of_figures_list[i - 1][j + 1] !== undefined) { //jobbra fel
+                            if (white_figures.includes(positions_of_figures_list[i - 1][j + 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
+                        }
+                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !black_figures.includes(positions_of_figures_list[i + 1][j - 1]) && positions_of_figures_list[i + 1][j - 1] !== undefined) { //balra le
+                            if (white_figures.includes(positions_of_figures_list[i + 1][j - 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
+                            else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
+                            }
+                        }
+                    }
+                } else if (positions_of_figures_list[i][j] === 'P') {
+                    if (positions_of_figures_list[i - 1][j] === 'x' /*és nincs abszolút kötésben*/) { //tud előre lépni
+                        legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
+
+                        if (coordinate[1] === '2' && positions_of_figures_list[i - 2][j] === 'x') { //tud előre kettőt lépni
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][9 - i]);
+                        }
+                    }
+                    if (positions_of_figures_list[i - 1][j + 1] !== 'x' && positions_of_figures_list[i - 1][j + 1] !== undefined && black_figures.includes(positions_of_figures_list[i - 1][j + 1]) && positions_of_figures_list[i - 1][j + 1] !== undefined) { //tud jobbra ütni
+                        legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i])
+                    }
+                    if (positions_of_figures_list[i - 1][j - 1] !== 'x' && positions_of_figures_list[i - 1][j - 1] !== undefined && black_figures.includes(positions_of_figures_list[i - 1][j - 1]) && positions_of_figures_list[i - 1][j - 1] !== undefined) { //tud balra ütni
+                        legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
+                    }
+                    continue;
+                } else if (positions_of_figures_list[i][j] === 'N') {
+                    if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j + 2] && positions_of_figures_list[i + 1][j + 2] !== undefined) /*és nincs abszolút kötésben*/) { //kettőt jobbra, egyet le
+                        if (black_figures.includes(positions_of_figures_list[i + 1][j + 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 2] + coordinates_2D[1][6 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j - 2]) && positions_of_figures_list[i + 1][j - 2] !== undefined /*és nincs abszolút kötésben*/) { //kettőt balra, egyet le
+                        if (black_figures.includes(positions_of_figures_list[i + 1][j - 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 2] + coordinates_2D[1][6 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j + 2] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j + 2]) && positions_of_figures_list[i - 1][j + 2] !== undefined /*és nincs abszolút kötésben*/) {
+                        if (black_figures.includes(positions_of_figures_list[i - 1][j + 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 2] + coordinates_2D[1][8 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 2] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j - 2]) && positions_of_figures_list[i - 1][j - 2] !== undefined /*és nincs abszolút kötésben*/) {
+                        if (black_figures.includes(positions_of_figures_list[i - 1][j - 2])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 2] + coordinates_2D[1][8 - i]); //kettőt balra, egyet fel
+                        }
+                    }
+                    if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 2][j + 1] && positions_of_figures_list[i + 2][j + 1] !== undefined) /*és nincs abszolút kötésben*/) {
+                        if (black_figures.includes(positions_of_figures_list[i + 2][j + 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][5 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][5 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 2][j - 1]) && positions_of_figures_list[i + 2][j - 1] !== undefined /*és nincs abszolút kötésben*/) {
+                        if (black_figures.includes(positions_of_figures_list[i + 2][j - 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][5 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 2][j + 1] && positions_of_figures_list[i - 2][j + 1] !== undefined) /*és nincs abszolút kötésben*/) { //egyet jobbra, kettőt fel
+                        if (black_figures.includes(positions_of_figures_list[i - 2][j + 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][9 - i]);
+                        }
+                    }
+                    if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][9 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 2][j - 1] && positions_of_figures_list[i - 2][j - 1] !== undefined) /*és nincs abszolút kötésben*/) {//egyet balra, kettőt fel
+                        if (black_figures.includes(positions_of_figures_list[i - 2][j - 1])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][9 - i]);
+                        }
+                    }
+
+                } else if (positions_of_figures_list[i][j] === 'B') {
+                    let k = 1;
+                    while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j + k]) && positions_of_figures_list[i + k][j + k] !== undefined) { //jobbra le
+                        if (black_figures.includes(positions_of_figures_list[i + k][j + k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
+                            k++;
+                        }
+                    }
+                    k = 1;
+                    while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j - k]) && positions_of_figures_list[i - k][j - k] !== undefined) { //balra fel
+                        if (black_figures.includes(positions_of_figures_list[i - k][j - k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                            k++;
+                        }
+                    }
+                    if (true /*és nincs abszolút kötésben mellékátlóra vagy vízsinztesen vagy függőlegesen*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j + k]) && positions_of_figures_list[i - k][j + k] !== undefined) { //jobbra fel
+                            if (black_figures.includes(positions_of_figures_list[i - k][j + k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
+                                k++;
+                            }
+                        }
+                    }
+                    k = 1;
+                    while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j - k]) && positions_of_figures_list[i + k][j - k] !== undefined) { //balra le
+                        if (black_figures.includes(positions_of_figures_list[i + k][j - k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                            break;
+                        } else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                        k++;
+                    }
+                } else if (positions_of_figures_list[i][j] === 'R') {
+                    if (true /*és nincs vízszintesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j]) && positions_of_figures_list[i + k][j] !== undefined) { //le
+                            if (black_figures.includes(positions_of_figures_list[i + k][j])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
+                                k++;
+                            }
+                        }
+                        k = 1;
+                        while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j]) && positions_of_figures_list[i - k][j] !== undefined) { //fel
+                            if (black_figures.includes(positions_of_figures_list[i - k][j])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
+                                k++;
+                            }
+                        }
+                    }
+                    if (true /*és nincs függőlegesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j - k]) && positions_of_figures_list[i][j - k] !== undefined) { //balra
+                            if (black_figures.includes(positions_of_figures_list[i][j - k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                k++;
+                            }
+                        }
+                        k = 1;
+                        while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j + k]) && positions_of_figures_list[i][j + k] !== undefined) { //jobbra
+                            if (black_figures.includes(positions_of_figures_list[i][j + k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                k++;
+                            }
+                        }
+                    }
+                } else if (positions_of_figures_list[i][j] === 'Q') {
+                    let k = 1;
+                    while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j + k]) && positions_of_figures_list[i + k][j + k] !== undefined) { //jobbra le
+                        if (black_figures.includes(positions_of_figures_list[i + k][j + k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
+                            k++;
+                        }
+                    }
+                    k = 1;
+                    while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j - k]) && positions_of_figures_list[i - k][j - k] !== undefined) { //balra fel
+                        if (black_figures.includes(positions_of_figures_list[i - k][j - k])) {
+                            legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                            break;
+                        } else {
+                            legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
+                            k++;
+                        }
+                    }
+                    if (true /*és nincs abszolút kötésben mellékátlóra vagy vízsinztesen vagy függőlegesen*/) {
+                        let k = 1;
+                        while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j + k]) && positions_of_figures_list[i - k][j + k] !== undefined) { //jobbra fel
+                            if (black_figures.includes(positions_of_figures_list[i - k][j + k])) {
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
+                                break;
+                            } else {
+                                legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
+                                k++;
+                            }
+                        }
+                        k = 1;
+                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j - k]) && positions_of_figures_list[i + k][j - k] !== undefined) { //balra le
                             if (black_figures.includes(positions_of_figures_list[i + k][j - k])) {
-                                legal_moves_per_coordinate.push('Bx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                                legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
                                 break;
-                            } else legal_moves_per_coordinate.push('B' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
-                            k++;
-                        }
-
-                        if (positions_of_figures_list[i][j] === 'R') {
-                            if (true /*és nincs vízszintesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
-                                let k = 1;
-                                console.log('FischPferd!');
-                                while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j])) { //le
-                                    if (black_figures.includes(positions_of_figures_list[i + k][j])) {
-                                        legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
-                                        break;
-                                    } else {
-                                        legal_moves_per_coordinate.push('R' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
-                                        k++;
-                                        console.log("Lefele");
-                                    }
-                                }
-                                k = 1;
-                                while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j])) { //fel
-                                    if (black_figures.includes(positions_of_figures_list[i - k][j])) {
-                                        legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
-                                        break;
-                                    } else {
-                                        legal_moves_per_coordinate.push('R' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
-                                        k++;
-                                    }
-                                    console.log("Felfele");
-                                }
-                            }
-                            if (true /*és nincs függőlegesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
-                                let k = 1;
-                                while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j - k])) { //balra
-                                    if (black_figures.includes(positions_of_figures_list[i][j - k])) {
-                                        legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
-                                        break;
-                                    } else {
-                                        legal_moves_per_coordinate.push('R' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
-                                        k++;
-                                        console.log("Csárdás balra");
-                                    }
-                                }
-                                k = 1;
-                                while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j + k])) { //jobbra
-                                    if (black_figures.includes(positions_of_figures_list[i][j + k])) {
-                                        legal_moves_per_coordinate.push('Rx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
-                                        break;
-                                    } else {
-                                        legal_moves_per_coordinate.push('R' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
-                                        k++;
-                                        console.log("Csárdás jobbra");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (positions_of_figures_list[i][j] === 'Q') {
-                        if (true /*és nincs abszolút kötésben főátlóra, vagy vízszintesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j + k])) { //jobbra le
-                                if (black_figures.includes(positions_of_figures_list[i + k][j + k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i - k]);
-                                    k++;
-                                }
-                            }
-                        }
-                        k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j - k])) { //balra fel
-                            if (black_figures.includes(positions_of_figures_list[i - k][j - k])) {
-                                legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
-                                break;
-                            } else {
-                                legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i + k]);
-                                k++;
-                            }
-                        }
-                        if (true /*és nincs abszolút kötésben mellékátlóra vagy vízsinztesen vagy függőlegesen*/) {
-                            let k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j + k])) { //jobbra fel
-                                if (black_figures.includes(positions_of_figures_list[i - k][j + k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    break;
-                                } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i + k]);
-                                    k++;
-                                }
-                            }
-                        }
-                        k = 1;
-                        while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j - k])) { //balra le
-                            if (black_figures.includes(positions_of_figures_list[i + k][j - k])) {
-                                legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
-                                break;
-                            } else legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
+                            } else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i - k]);
                             k++;
                         }
                         if (true /*és nincs vízszintesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
                             let k = 1;
-                            console.log('FischPferd!');
-                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j])) { //le
+                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i - k] !== undefined && !white_figures.includes(positions_of_figures_list[i + k][j]) && positions_of_figures_list[i + k][j] !== undefined) { //le
                                 if (black_figures.includes(positions_of_figures_list[i + k][j])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
+                                    legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
                                     break;
                                 } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
+                                    legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i - k]);
                                     k++;
-                                    console.log("Lefele");
                                 }
                             }
                             k = 1;
-                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j])) { //fel
+                            while (coordinates_2D[0][j] !== undefined && coordinates_2D[1][7 - i + k] !== undefined && !white_figures.includes(positions_of_figures_list[i - k][j]) && positions_of_figures_list[i - k][j] !== undefined) { //fel
                                 if (black_figures.includes(positions_of_figures_list[i - k][j])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
+                                    legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
                                     break;
                                 } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
+                                    legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][7 - i + k]);
                                     k++;
                                 }
-                                console.log("Felfele");
                             }
                         }
                         if (true /*és nincs függőlegesen vagy átlósan (főátló, mellékátló) abszolút kötésben*/) {
                             let k = 1;
-                            while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j - k])) { //balra
+                            while (coordinates_2D[0][j - k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j - k]) && positions_of_figures_list[i][j - k] !== undefined) { //balra
                                 if (black_figures.includes(positions_of_figures_list[i][j - k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                    legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
                                     break;
                                 } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
+                                    legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - k] + coordinates_2D[1][7 - i]);
                                     k++;
-                                    console.log("Csárdás balra");
                                 }
                             }
                             k = 1;
-                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j + k])) { //jobbra
+                            while (coordinates_2D[0][j + k] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j + k]) && positions_of_figures_list[i][j + k] !== undefined) { //jobbra
                                 if (black_figures.includes(positions_of_figures_list[i][j + k])) {
-                                    legal_moves_per_coordinate.push('Qx' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                    legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
                                     break;
                                 } else {
-                                    legal_moves_per_coordinate.push('Q' + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
+                                    legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + k] + coordinates_2D[1][7 - i]);
                                     k++;
-                                    console.log("Csárdás jobbra");
                                 }
                             }
                         }
                     }
-                    if (positions_of_figures_list[i][j] === 'K') {
-                        if (true /*és nem lép sakkba*/) {
-                            if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j])) { //le
-                                if (black_figures.includes(positions_of_figures_list[i + 1][j])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
-                            }
-                            if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j])) { //fel
-                                if (black_figures.includes(positions_of_figures_list[i - 1][j])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j] + coordinates_2D[1][8 - i])
-                            }
-                            if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j - 1])) { //balra
-                                if (black_figures.includes(positions_of_figures_list[i][j - 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
-                            }
-                            if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j + 1])) { //jobbra
-                                if (black_figures.includes(positions_of_figures_list[i][j + 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j + 1]+coordinates_2D[1][7 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j + 1] + coordinates_2D[1][7 - i]);
-                            }
-                            if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j + 1])) { //jobbra le
-                                if (black_figures.includes(positions_of_figures_list[i + 1][j + 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j + 1]+coordinates_2D[1][6 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i]);
-                            }
-                            if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j - 1])) { //balra fel
-                                if (black_figures.includes(positions_of_figures_list[i - 1][j - 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
-                            }
-                            if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j + 1])) { //jobbra fel
-                                if (black_figures.includes(positions_of_figures_list[i - 1][j + 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
-                            }
-                            if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j - 1])) { //balra le
-                                if (black_figures.includes(positions_of_figures_list[i + 1][j - 1])) legal_moves_per_coordinate.push('Kx' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
-                                else legal_moves_per_coordinate.push('K' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
-                            }
+                } else if (positions_of_figures_list[i][j] === 'K') {
+                    if (true /*és nem lép sakkba*/) {
+                        if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j]) && positions_of_figures_list[i + 1][j] !== undefined) { //le
+                            if (black_figures.includes(positions_of_figures_list[i + 1][j])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][6 - i]);
+                        }
+                        if (coordinates_2D[0][j] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j]) && positions_of_figures_list[i - 1][j] !== undefined) { //fel
+                            if (black_figures.includes(positions_of_figures_list[i - 1][j])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j] + coordinates_2D[1][8 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j] + coordinates_2D[1][8 - i])
+                        }
+                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j - 1]) && positions_of_figures_list[i][j - 1] !== undefined) { //balra
+                            if (black_figures.includes(positions_of_figures_list[i][j - 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][7 - i]);
+                        }
+                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][7 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i][j + 1]) && positions_of_figures_list[i][j + 1] !== undefined) { //jobbra
+                            if (black_figures.includes(positions_of_figures_list[i][j + 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][7 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][7 - i]);
+                        }
+                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j + 1]) && positions_of_figures_list[i + 1][j + 1] !== undefined) { //jobbra le
+                            if (black_figures.includes(positions_of_figures_list[i + 1][j + 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][6 - i]);
+                        }
+                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j - 1]) && positions_of_figures_list[i - 1][j - 1] !== undefined) { //balra fel
+                            if (black_figures.includes(positions_of_figures_list[i - 1][j - 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][8 - i]);
+                        }
+                        if (coordinates_2D[0][j + 1] !== undefined && coordinates_2D[1][8 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i - 1][j + 1]) && positions_of_figures_list[i - 1][j + 1] !== undefined) { //jobbra fel
+                            if (black_figures.includes(positions_of_figures_list[i - 1][j + 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j + 1] + coordinates_2D[1][8 - i]);
+                        }
+                        if (coordinates_2D[0][j - 1] !== undefined && coordinates_2D[1][6 - i] !== undefined && !white_figures.includes(positions_of_figures_list[i + 1][j - 1]) && positions_of_figures_list[i + 1][j - 1] !== undefined) { //balra le
+                            if (black_figures.includes(positions_of_figures_list[i + 1][j - 1])) legal_moves_per_coordinate.push(coordinate + 'x' + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
+                            else legal_moves_per_coordinate.push(coordinate + coordinates_2D[0][j - 1] + coordinates_2D[1][6 - i]);
                         }
                     }
-                } else
-                    console.log(wob);
+                }
             }
         }
     }
-    console.log(legal_moves_per_coordinate);
+    return legal_moves_per_coordinate;
 }
+
+
 
 

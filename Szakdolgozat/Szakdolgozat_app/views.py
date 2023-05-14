@@ -11,9 +11,8 @@ def index(request):
     if request.method == 'POST':
         if len(Position.objects.all()) >= 1:
 
-#ha != helyett `is not`-ot írunk, akkor érvényesnek veszi a lépést, de nem lépi meg (de a lépésszámot növeli)
-            if request.POST.get('positions') != Position.objects.last().positions_of_figures: #ha a mostani pozi NEM ugyanaz, mint a legutóbb elmentett felállás
-                # nem íródik felül a request?
+
+            if request.POST.get('positions') != Position.objects.last().positions_of_figures:
                 p = Position()
                 p.positions_of_figures = request.POST.get('positions')
                 if p.positions_of_figures == 'rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR':
@@ -29,23 +28,7 @@ def index(request):
                 p.player_name = request.POST.get('name')
                 p.save()
             else:
-                print('Position.objects.last().positions_of_figures felépítve:')
-                print(Position)
-                print('-------------')
-                print(Position.objects)
-                print('-------------')
-                print(Position.objects.last())
-                print('-------------')
-                print(Position.objects.last().positions_of_figures)
-                print('*-'*50)
-                print('És ugyanígy a request.POST.get(\'positions\') felépítve:')
-                print(request)
-                print('-------------')
-                print(request.POST)
-                print('-------------')
-                print(request.POST.get('positions'))
-                print('-------------')
-                context['error'] = 'Még nem léptél! (nézz rá a terminálra extra infókért)' #valamiért mindig lefut ez az ág
+                context['error'] = 'Még nem léptél!'
         else:
             Position.positions_of_figures = 'rnbqkbnrppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxPPPPPPPPRNBQKBNR'
 

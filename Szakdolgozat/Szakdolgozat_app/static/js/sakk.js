@@ -34,22 +34,29 @@ let pk;
 let figure_row, figure_col;
 let move_flag = false;
 let king_move_boolean;
-
+let position_string;
+let moving = '';
+let counter =0;
+let original_figure_row, original_figure_col;
+let moved_figure_row, moved_figure_col;
+let captured_piece;
 canvas.onclick = canvas_click;
 
 function main(positions_of_figures, white_or_black, id) {
+    position_string = positions_of_figures;
     document.getElementById('positions').value = positions_of_figures; //value
     positions_of_figures_list = [];
     for (let i = 0; i < 8; i++) {
         positions_of_figures_list.push(positions_of_figures.slice(i * 8, (i + 1) * 8).split(''));
     }
+    console.log(positions_of_figures);
     pk = id;
     wob = white_or_black;
     draw_table();
     setInterval("api()", 3000);
     get_white_pieces_informations();
     get_black_pieces_informations();
-    console.log(move('g8f6'));
+    console.log(move('c1b2'));
 }
 
 document.getElementById("reset").onclick = function () {
@@ -107,14 +114,14 @@ function draw_table() {
 function canvas_click(event) {
 
     let rect = canvas.getBoundingClientRect();
-    x = Math.floor(((event.clientX - rect.left) / (rect.right - rect.left)) * CS);
-    y = Math.floor(((event.clientY - rect.top) / (rect.bottom - rect.top)) * CS);
+    let x = Math.floor(((event.clientX - rect.left) / (rect.right - rect.left)) * CS);
+    let y = Math.floor(((event.clientY - rect.top) / (rect.bottom - rect.top)) * CS);
 
     let row = parseInt(y / (CS / 8)); // hanyas sor / oszlop
     let col = parseInt(x / (CS / 8));
+
     console.log(row, col);
     console.log(coordinates_2D[0][col] + coordinates_2D[1][7 - row]);
-
     if (move_flag === false) { //nincs kijelölve
         if (positions_of_figures_list[row][col] !== 'x') {
             if ((wob === "White" && black_figures.includes(positions_of_figures_list[row][col])) ||
@@ -127,18 +134,44 @@ function canvas_click(event) {
                 move_flag = true;
                 figure_row = row;
                 figure_col = col;
+                if(counter ===0) {
+                    original_figure_row = row;
+                    original_figure_col = col;
+                    console.log(original_figure_row, original_figure_col);
+                    counter++;
+                }
+                console.log(coordinates_2D[0][original_figure_col]+coordinates_2D[1][7-original_figure_row]);
             }
         }
     } else { // ki van jelölve
-        if (row === figure_row && col === figure_col) {
+        if (row === figure_row && col === figure_col) { //deaktiválja a kijelölést
             draw_table();
             move_flag = false;
-        } else {
-            positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
-            positions_of_figures_list[figure_row][figure_col] = 'x';
-            draw_table();
-            move_flag = false;
-            document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
+        } else { //áthelyezi a bábut
+            if (moving === '') {
+                moving = coordinates_2D[0][col] + coordinates_2D[1][7 - row];
+                console.log(moving);
+                if(positions_of_figures_list[row][col]!=='x'){
+                 captured_piece=positions_of_figures_list[row][col];
+                }
+                positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
+                console.log(row, col, figure_row, figure_col);
+                positions_of_figures_list[figure_row][figure_col] = 'x';
+            }
+            if(moving === coordinates_2D[0][figure_col]+coordinates_2D[1][7-figure_row] && row===original_figure_row && col === original_figure_col){
+                positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
+                if(captured_piece===undefined){
+                    positions_of_figures_list[figure_row][figure_col] = 'x';
+                }
+                else {
+                    positions_of_figures_list[figure_row][figure_col] = captured_piece;
+                    captured_piece=undefined;
+                }
+                moving = '';
+                counter--;
+            }
+                draw_table();
+                move_flag = false;
         }
 
     }
@@ -175,7 +208,7 @@ function move(notation) {
         }
     }
     if (bennevan) {
-        tmp=positions_of_figures_list;
+        tmp = positions_of_figures_list;
         tmp[row_what][col_what] = 'x';
         tmp[row_where][col_where] = piece;
         king_move_boolean = piece === 'k' || piece === 'K';
@@ -196,7 +229,7 @@ function check_for_checks() {
     let white_king_pos = get_white_king_position(tmp);
     let black_king_pos = get_black_king_position(tmp);
     let sakk = false;
-    if (wob === "White") {
+    if (wob === "Black" || wob === "New") {
         for (let i = 0; i < sotet_lehetosegek.length; i++) { //megnézzük sötét lehetséges lépésit
             for (let j = 0; j < sotet_lehetosegek[i].length; j++) {
                 if (king_move_boolean) {
@@ -209,7 +242,13 @@ function check_for_checks() {
                 }
             }
         }
-    } else if (wob === "Black" || wob === "New") {
+        positions_of_figures_list = [];
+        for (let i = 0; i < 8; i++) {
+            positions_of_figures_list.push(position_string.slice(i * 8, (i + 1) * 8).split(''));
+        }
+        console.log("Világos sakkban: " + sakk);
+        console.log(get_white_pieces_informations(tmp));
+    } else if (wob === "White") {
         for (let i = 0; i < vilagos_lehetosegek.length; i++) { //világos lépései
             for (let j = 0; j < vilagos_lehetosegek[i].length; j++) {
                 if (king_move_boolean) {
@@ -219,6 +258,8 @@ function check_for_checks() {
                 if (vilagos_lehetosegek[i][j].split('x')[1] === black_king_pos) sakk = true;
             }
         }
+        console.log("Sötét sakkban: " + sakk);
+        console.log(get_black_pieces_informations(tmp));
     }
     return sakk;
 }

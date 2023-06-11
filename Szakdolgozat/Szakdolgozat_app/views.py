@@ -12,6 +12,7 @@ def index(request):
         if len(Position.objects.all()) >= 1:
 
 
+            #legal_moves, boolean, ...
             if request.POST.get('positions') != Position.objects.last().positions_of_figures:
                 p = Position()
                 p.positions_of_figures = request.POST.get('positions')

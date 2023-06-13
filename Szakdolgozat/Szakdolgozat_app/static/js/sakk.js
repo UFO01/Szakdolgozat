@@ -36,10 +36,12 @@ let move_flag = false;
 let king_move_boolean;
 let position_string;
 let moving = '';
-let counter =0;
+let counter = 0;
 let original_figure_row, original_figure_col;
 let moved_figure_row, moved_figure_col;
-let captured_piece;
+let occupied_square;
+let move;
+let all_moves= [];
 canvas.onclick = canvas_click;
 
 function main(positions_of_figures, white_or_black, id) {
@@ -56,7 +58,11 @@ function main(positions_of_figures, white_or_black, id) {
     setInterval("api()", 3000);
     get_white_pieces_informations();
     get_black_pieces_informations();
-    console.log(move('c1b2'));
+    localStorage.setItem('all_moves', JSON.stringify(all_moves));
+    var storedMoves = localStorage.getItem('all_moves');
+    var retrievedMoves = JSON.parse(storedMoves);
+    console.log(retrievedMoves);
+    //console.log(move('c1b2'));
 }
 
 document.getElementById("reset").onclick = function () {
@@ -112,7 +118,11 @@ function draw_table() {
 
 
 function canvas_click(event) {
-
+    let vilagos_lehetosegek = get_white_pieces_informations();
+    let sotet_lehetosegek = get_black_pieces_informations();
+    console.log(vilagos_lehetosegek);
+    let szerepel = false;
+    let valid=true;
     let rect = canvas.getBoundingClientRect();
     let x = Math.floor(((event.clientX - rect.left) / (rect.right - rect.left)) * CS);
     let y = Math.floor(((event.clientY - rect.top) / (rect.bottom - rect.top)) * CS);
@@ -134,13 +144,13 @@ function canvas_click(event) {
                 move_flag = true;
                 figure_row = row;
                 figure_col = col;
-                if(counter ===0) {
+                if (counter === 0) {
                     original_figure_row = row;
                     original_figure_col = col;
                     console.log(original_figure_row, original_figure_col);
                     counter++;
                 }
-                console.log(coordinates_2D[0][original_figure_col]+coordinates_2D[1][7-original_figure_row]);
+                console.log(coordinates_2D[0][original_figure_col] + coordinates_2D[1][7 - original_figure_row]);
             }
         }
     } else { // ki van jelölve
@@ -148,92 +158,77 @@ function canvas_click(event) {
             draw_table();
             move_flag = false;
         } else { //áthelyezi a bábut
+            console.log(moving);
             if (moving === '') {
                 moving = coordinates_2D[0][col] + coordinates_2D[1][7 - row];
-                console.log(moving);
-                if(positions_of_figures_list[row][col]!=='x'){
-                 captured_piece=positions_of_figures_list[row][col];
-                }
+                occupied_square = positions_of_figures_list[row][col];
                 positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
-                console.log(row, col, figure_row, figure_col);
                 positions_of_figures_list[figure_row][figure_col] = 'x';
-            }
-            if(moving === coordinates_2D[0][figure_col]+coordinates_2D[1][7-figure_row] && row===original_figure_row && col === original_figure_col){
-                positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
-                if(captured_piece===undefined){
-                    positions_of_figures_list[figure_row][figure_col] = 'x';
+                move = coordinates_2D[0][original_figure_col] + coordinates_2D[1][7 - original_figure_row] + (occupied_square!=='x'? 'x' : '') + coordinates_2D[0][col] + coordinates_2D[1][7 - row];
+                console.log(move);
+                if (wob === "White") {
+                    for (let i = 0; i < sotet_lehetosegek.length; i++) {
+                        for (let j = 0; j < sotet_lehetosegek[i].length; j++) {
+                            if (sotet_lehetosegek[i][j] === move) {
+                                szerepel = true;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    for (let i = 0; i < vilagos_lehetosegek.length; i++) {
+                        for (let j = 0; j < vilagos_lehetosegek[i].length; j++) {
+                            if (vilagos_lehetosegek[i][j] === move) {
+                                szerepel = true;
+                                break;
+                            }
+                        }
+                    }
                 }
-                else {
-                    positions_of_figures_list[figure_row][figure_col] = captured_piece;
-                    captured_piece=undefined;
+
+                if (check_for_checks() || !szerepel) {
+                    valid = false;
+                    positions_of_figures_list[figure_row][figure_col] = positions_of_figures_list[row][col];
+                    positions_of_figures_list[row][col] = 'x';
+                    moving = '';
+                }
+                if(valid){
+                    all_moves.push(move);
+                }
+                document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
+            }
+            if (moving === coordinates_2D[0][figure_col] + coordinates_2D[1][7 - figure_row] && row === original_figure_row && col === original_figure_col) {
+                all_moves.pop();
+                positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
+                if (occupied_square === undefined) {
+                    positions_of_figures_list[figure_row][figure_col] = 'x';
+                } else {
+                    positions_of_figures_list[figure_row][figure_col] = occupied_square;
+                    occupied_square = undefined;
                 }
                 moving = '';
                 counter--;
             }
-                draw_table();
-                move_flag = false;
+            console.log(all_moves);
+            draw_table();
+            move_flag = false;
         }
 
     }
     document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');
 }
 
-function move(notation) {
-    let bennevan = false;
-    let darabolt = notation.split('');
-    let row_what = 7 - coordinates_2D[1].indexOf((darabolt[1]));
-    let col_what = coordinates_2D[0].indexOf((darabolt[0]));
-    let row_where = 7 - coordinates_2D[1].indexOf((darabolt[darabolt.length - 1]));
-    let col_where = coordinates_2D[0].indexOf((darabolt[darabolt.length - 2]));
-    let piece = positions_of_figures_list[row_what][col_what];
+function check_for_checks() {
     let vilagos_lehetosegek = get_white_pieces_informations();
     let sotet_lehetosegek = get_black_pieces_informations();
-    if (wob === "White") {
-        for (let i = 0; i < sotet_lehetosegek.length; i++) {
-            for (let j = 0; j < sotet_lehetosegek[i].length; j++) {
-                if (sotet_lehetosegek[i][j] === notation) {
-                    bennevan = true;
-                    break;
-                }
-            }
-        }
-    } else {
-        for (let i = 0; i < vilagos_lehetosegek.length; i++) {
-            for (let j = 0; j < vilagos_lehetosegek[i].length; j++) {
-                if (vilagos_lehetosegek[i][j] === notation) {
-                    bennevan = true;
-                    break;
-                }
-            }
-        }
-    }
-    if (bennevan) {
-        tmp = positions_of_figures_list;
-        tmp[row_what][col_what] = 'x';
-        tmp[row_where][col_where] = piece;
-        king_move_boolean = piece === 'k' || piece === 'K';
-        if (check_for_checks(tmp)) {
-            return positions_of_figures_list;
-        } else {
-            tmp = positions_of_figures_list;
-            tmp[row_what][col_what] = 'x';
-            tmp[row_where][col_where] = piece;
-            return tmp;
-        }
-    } else return positions_of_figures_list;
-}
-
-function check_for_checks() {
-    let vilagos_lehetosegek = get_white_pieces_informations(tmp);
-    let sotet_lehetosegek = get_black_pieces_informations(tmp);
-    let white_king_pos = get_white_king_position(tmp);
-    let black_king_pos = get_black_king_position(tmp);
+    let white_king_pos = get_white_king_position();
+    let black_king_pos = get_black_king_position();
     let sakk = false;
     if (wob === "Black" || wob === "New") {
         for (let i = 0; i < sotet_lehetosegek.length; i++) { //megnézzük sötét lehetséges lépésit
             for (let j = 0; j < sotet_lehetosegek[i].length; j++) {
                 if (king_move_boolean) {
-                    white_king_pos = get_white_king_position(tmp);
+                    white_king_pos = get_white_king_position();
                     if (sotet_lehetosegek[i][j].split('x')[1] === white_king_pos) {
                         sakk = true;
                     }
@@ -242,24 +237,19 @@ function check_for_checks() {
                 }
             }
         }
-        positions_of_figures_list = [];
-        for (let i = 0; i < 8; i++) {
-            positions_of_figures_list.push(position_string.slice(i * 8, (i + 1) * 8).split(''));
-        }
         console.log("Világos sakkban: " + sakk);
-        console.log(get_white_pieces_informations(tmp));
     } else if (wob === "White") {
         for (let i = 0; i < vilagos_lehetosegek.length; i++) { //világos lépései
             for (let j = 0; j < vilagos_lehetosegek[i].length; j++) {
                 if (king_move_boolean) {
-                    black_king_pos = get_black_king_position(tmp);
+                    black_king_pos = get_black_king_position();
                     if (vilagos_lehetosegek[i][j].split('x')[1] === black_king_pos) sakk = true;
                 }
                 if (vilagos_lehetosegek[i][j].split('x')[1] === black_king_pos) sakk = true;
             }
         }
         console.log("Sötét sakkban: " + sakk);
-        console.log(get_black_pieces_informations(tmp));
+        console.log(get_black_pieces_informations());
     }
     return sakk;
 }
@@ -307,7 +297,6 @@ function get_white_king_position(list = positions_of_figures_list) {
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
             if (list[i][j] === 'K') {
-                //console.log("Világos király " + coordinates_2D[0][j] + coordinates_2D[1][7 - i] + '-n!');
                 return coordinates_2D[0][j] + coordinates_2D[1][7 - i];
             }
         }
@@ -318,7 +307,6 @@ function get_black_king_position() {
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
             if (positions_of_figures_list[i][j] === 'k') {
-                //console.log("Sötét király: " + coordinates_2D[0][j] + coordinates_2D[1][7 - i]);
                 return coordinates_2D[0][j] + coordinates_2D[1][7 - i];
             }
         }
@@ -334,7 +322,6 @@ function get_white_queens_positions() {
             }
         }
     }
-    //console.log("Világos vezér(ek): " + vilagos_vezerek);
     return vilagos_vezerek;
 }
 
@@ -347,7 +334,6 @@ function get_black_queens_positions() {
             }
         }
     }
-    //console.log("Sötét vezér(ek): " + sotet_vezerek);
     return sotet_vezerek;
 }
 
@@ -360,7 +346,6 @@ function get_white_rooks_positions() {
             }
         }
     }
-    //console.log("Világos bástyák: " + vilagos_bastyak);
     return vilagos_bastyak;
 }
 
@@ -373,7 +358,6 @@ function get_black_rooks_positions() {
             }
         }
     }
-    //console.log("Sötét bástyák: " + sotet_bastyak);
     return sotet_bastyak;
 }
 
@@ -386,7 +370,6 @@ function get_white_bishops_positions() {
             }
         }
     }
-    //console.log("Világos futók: " + vilagos_futok);
     return vilagos_futok;
 }
 
@@ -399,7 +382,6 @@ function get_black_bishops_positions() {
             }
         }
     }
-    //console.log("Sötét futók: " + sotet_futok);
     return sotet_futok;
 }
 
@@ -412,7 +394,6 @@ function get_white_knights_positions() {
             }
         }
     }
-    //console.log("Világos huszárok: " + vilagos_huszarok);
     return vilagos_huszarok;
 }
 
@@ -425,7 +406,6 @@ function get_black_knights_positions() {
             }
         }
     }
-    //console.log("Sötét huszárok: " + sotet_huszarok);
     return sotet_huszarok;
 }
 
@@ -438,7 +418,6 @@ function get_white_pawns_positions() {
             }
         }
     }
-    //console.log("Világos gyalogok: " + vilagos_gyalogok);
     return vilagos_gyalogok;
 }
 
@@ -451,7 +430,6 @@ function get_black_pawns_positions() {
             }
         }
     }
-    //console.log("Sötét gyalogok: " + sotet_gyalogok);
     return sotet_gyalogok;
 }
 
@@ -464,7 +442,6 @@ function get_empty_squares() {
             }
         }
     }
-    //console.log("Üres mezők: " + ures);
     return ures;
 }
 

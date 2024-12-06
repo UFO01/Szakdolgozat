@@ -41,7 +41,7 @@ let original_figure_row, original_figure_col;
 let moved_figure_row, moved_figure_col;
 let occupied_square;
 let move;
-let all_moves= [];
+let all_moves = [];
 canvas.onclick = canvas_click;
 
 function main(positions_of_figures, white_or_black, id) {
@@ -62,6 +62,8 @@ function main(positions_of_figures, white_or_black, id) {
     var storedMoves = localStorage.getItem('all_moves');
     var retrievedMoves = JSON.parse(storedMoves);
     console.log(retrievedMoves);
+    //AIPerformance();
+    onedaycashback();
     //console.log(move('c1b2'));
 }
 
@@ -122,7 +124,7 @@ function canvas_click(event) {
     let sotet_lehetosegek = get_black_pieces_informations();
     console.log(vilagos_lehetosegek);
     let szerepel = false;
-    let valid=true;
+    let valid = true;
     let rect = canvas.getBoundingClientRect();
     let x = Math.floor(((event.clientX - rect.left) / (rect.right - rect.left)) * CS);
     let y = Math.floor(((event.clientY - rect.top) / (rect.bottom - rect.top)) * CS);
@@ -164,7 +166,7 @@ function canvas_click(event) {
                 occupied_square = positions_of_figures_list[row][col];
                 positions_of_figures_list[row][col] = positions_of_figures_list[figure_row][figure_col];
                 positions_of_figures_list[figure_row][figure_col] = 'x';
-                move = coordinates_2D[0][original_figure_col] + coordinates_2D[1][7 - original_figure_row] + (occupied_square!=='x'? 'x' : '') + coordinates_2D[0][col] + coordinates_2D[1][7 - row];
+                move = coordinates_2D[0][original_figure_col] + coordinates_2D[1][7 - original_figure_row] + (occupied_square !== 'x' ? 'x' : '') + coordinates_2D[0][col] + coordinates_2D[1][7 - row];
                 console.log(move);
                 if (wob === "White") {
                     for (let i = 0; i < sotet_lehetosegek.length; i++) {
@@ -192,7 +194,7 @@ function canvas_click(event) {
                     positions_of_figures_list[row][col] = 'x';
                     moving = '';
                 }
-                if(valid){
+                if (valid) {
                     all_moves.push(move);
                 }
                 document.getElementById('positions').value = positions_of_figures_list.toString().replaceAll(',', '');

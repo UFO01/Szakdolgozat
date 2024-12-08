@@ -1,6 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from .models import Position
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client.exposition import basic_auth_handler
+from django.http import HttpResponse
 
 
 # Create your views here.
@@ -50,3 +53,7 @@ def api(request):
     print(request.GET)
     data = {"reload": str(Position.objects.last().pk) != request.GET.get('pk')}
     return JsonResponse(data)
+
+def metrics_view(request):
+    data = generate_latest()  # Collects the latest metrics
+    return HttpResponse(data, content_type=CONTENT_TYPE_LATEST)

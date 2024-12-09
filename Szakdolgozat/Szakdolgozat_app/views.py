@@ -54,6 +54,6 @@ def api(request):
     data = {"reload": str(Position.objects.last().pk) != request.GET.get('pk')}
     return JsonResponse(data)
 
-#def metrics_view(request):
-#    data = generate_latest()  # Collects the latest metrics
-#    return HttpResponse(data, content_type=CONTENT_TYPE_LATEST)
+def metrics_view(request):
+    data = generate_latest()  # Collects the latest metrics
+    return HttpResponse(data, content_type=CONTENT_TYPE_LATEST)

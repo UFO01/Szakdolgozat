@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from Szakdolgozat_app import views
-#from .views import metrics_view
+from Szakdolgozat_app.views import metrics_view
 
 
 urlpatterns = [
@@ -24,5 +24,5 @@ urlpatterns = [
     path('', include('Szakdolgozat_app.urls')),
     path('<int:pk>', views.load, name='load'),
     path('api', views.api, name='api'),
-    #path('metrics/', metrics_view, name='metrics'),
+    path('metrics/', metrics_view, name='metrics'),
 ]
